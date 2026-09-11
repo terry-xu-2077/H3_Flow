@@ -1027,3 +1027,339 @@ https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context
 
 ### Terry React UI Library
 https://github.com/terry-xu-2077/Terry_React_UI_Library
+
+---
+
+## 29. 自动化测试与 Codex 目标驱动开发
+
+H3 Flow 计划主要在本地通过 Codex 应用以“目标”的方式持续开发，因此测试体系必须从第一批业务代码开始建立，而不是在项目后期补齐。
+
+目标是让常规开发和修 Bug 尽可能形成以下闭环：
+
+```text
+定义目标 / Bug
+    ↓
+Codex 读取 AGENTS.md 与相关模块文档
+    ↓
+实现或先补回归测试
+    ↓
+运行 targeted tests
+    ↓
+失败则继续修复
+    ↓
+相关测试通过
+    ↓
+运行完整验收
+    ↓
+Definition of Done
+```
+
+### 29.1 测试分层
+
+建议至少包含：
+
+#### Unit Tests
+
+后端优先使用 `pytest`，前端使用 `Vitest + React Testing Library`。
+
+重点覆盖：
+
+- Task 状态和复制 / 修改
+- Asset 路径、Hash、项目隔离
+- Prompt Revision / Validator
+- ContextLink / Context Stale
+- Queue 优先级、暂停、恢复
+- Scheduler DAG 依赖
+- Provider Capability 匹配
+- Primary Result 切换
+- 数据库 CRUD / migration
+
+#### Integration Tests
+
+重点验证完整业务链：
+
+```text
+Task → Queue → Scheduler → Provider → Job → Result
+```
+
+不依赖真实 GPU，优先通过 Fake Provider 模拟成功、失败、超时、断线、重试和恢复。
+
+#### Contract Tests
+
+所有 Provider Adapter 必须通过统一 Contract Test。
+
+例如 Video Generation Provider 统一验证：
+
+```text
+validate / capabilities
+submit
+status / progress
+cancel
+collect_result
+context export / fallback（若支持）
+```
+
+Prompt Provider 同样验证标准输入、结构化输出、多模态能力、超时和错误归一化。
+
+#### E2E Tests
+
+使用 Playwright 启动真实 H3 Flow Backend + Frontend + Fake Provider，自动模拟用户操作。
+
+覆盖主闭环：
+
+```text
+创建项目
+→ 导入资产
+→ 创建 Task
+→ AI Prompt
+→ Ready
+→ 批量生成
+→ 审核
+→ 修改
+→ 重生成
+→ 导出
+```
+
+手机 Remote Monitor 同样用 Playwright 的移动端 viewport 自动测试，不要求每次都拿真实手机回归。
+
+#### Hardware Smoke Tests
+
+真实 ComfyUI / MiniMax-H3 或其他真实生成 Provider 不进入每次常规回归。
+
+只在重要版本、Provider 适配改动或发布前执行少量真实硬件 Smoke Test，例如：
+
+- 一个独立 Task
+- 一条两段 Context Chain
+- 校验输出文件可解码、时长 / 分辨率合理、Result / Context 元数据正确
+
+画面审美质量仍保留人工审核。
+
+### 29.2 Fake Provider 是测试基础设施
+
+必须从早期实现 `FakePromptProvider` 和 `FakeVideoProvider`。
+
+Fake Video Provider 至少支持配置：
+
+- 立即成功
+- 延迟成功
+- 指定进度后失败
+- 第一次失败、第二次成功
+- Provider 断线
+- Timeout
+- Cancel
+- 不支持 context
+- 只支持 last-frame continuation
+- 支持模拟 latent / audio context
+
+这样可以在几秒内自动测试几十个任务、复杂 DAG、恢复和异常状态，不需要真实 GPU。
+
+### 29.3 故障注入
+
+Scheduler / Provider / 文件系统相关测试应主动制造异常，而不是只测试 happy path。
+
+重点场景包括：
+
+- Provider 在 Job 运行中断开
+- H3 Flow 在 Job 运行中退出并重启
+- ComfyUI / Provider 重启
+- Asset 文件丢失 / 移动
+- Provider 返回未知 Job ID
+- Job 超时
+- 取消过程中收到 completed event
+- Result 已生成但回调丢失
+- 重复收到 completed event
+- 上游 Primary Result 被替换
+- Context Stale
+- 上游失败导致下游阻塞
+- 磁盘写入失败 / 空间不足
+- 数据库恢复和 migration 失败
+
+这些场景应逐步沉淀为永久回归测试。
+
+### 29.4 Bug 修复规则：Regression Test First
+
+正式 Bug 默认遵循：
+
+```text
+先增加可稳定复现 Bug 的测试
+→ 确认测试失败
+→ 修复实现
+→ 测试通过
+→ 保留该测试
+```
+
+禁止为了让测试通过而删除、绕过或弱化已有有效测试。
+
+### 29.5 统一验收入口
+
+计划建立：
+
+```text
+python scripts/verify.py
+```
+
+并支持有针对性的范围：
+
+```text
+python scripts/verify.py --area scheduler
+python scripts/verify.py --area providers
+python scripts/verify.py --area frontend
+python scripts/verify.py --area e2e
+python scripts/verify.py --full
+```
+
+实现过程中优先跑 targeted tests；目标完成前再运行 full verification。
+
+最终输出应清楚标识各测试层的 PASS / FAIL，减少 Codex 分析无关日志的成本。
+
+### 29.6 测试与开发文档
+
+规划目录：
+
+```text
+AGENTS.md
+
+docs/
+├─ H3_Flow_产品与架构规划.md
+├─ TEST_STRATEGY.md
+├─ ARCHITECTURE.md
+├─ PROVIDERS.md
+├─ ACCEPTANCE_CRITERIA.md
+└─ FAILURE_SCENARIOS.md
+
+tests/
+├─ unit/
+├─ integration/
+├─ contract/
+├─ e2e/
+├─ fixtures/
+└─ scenarios/
+
+scripts/
+└─ verify.py
+```
+
+`AGENTS.md` 只保留稳定、必要的工程规则和导航，不写成巨大百科全书。
+
+详细架构和测试规则由对应文档按需读取。
+
+---
+
+## 30. Token 成本与 AI 开发效率原则
+
+H3 Flow 的开发会长期使用 Codex / AI Coding Agent，因此 Token 成本应作为工程效率的一部分主动优化。
+
+目标不是“少写代码”，而是减少：
+
+- 反复扫描整个仓库
+- 反复理解已经确定的架构
+- 无关文件被加载进上下文
+- 海量日志反复分析
+- 同一 Bug 多次人工复现
+- 每次修改都执行完整重型测试
+
+### 30.1 最小必要上下文
+
+根 `AGENTS.md` 应明确：
+
+> Use the minimum repository context necessary for the task. Do not scan unrelated directories when the owning module is known.
+
+模块边界要清晰，避免一个几千行的“大一统 service”承载多个领域。
+
+目标是让大多数任务只需要读取对应模块及其 Contract / Tests，而不是重新理解整个项目。
+
+### 30.2 文档作为索引，而不是重复 Prompt
+
+开发目标应该可以很短，例如：
+
+```text
+实现 Video Provider 取消机制，遵循现有 Provider Contract。
+完成相关测试并运行对应验收。
+```
+
+项目背景、Provider 原则、测试规则不应每次重复塞进用户 Prompt，而应由：
+
+```text
+AGENTS.md
+→ 对应架构文档
+→ 对应模块代码
+→ 对应测试
+```
+
+按需加载。
+
+### 30.3 Targeted Tests 优先
+
+开发过程中优先运行最小相关测试集；只有完成目标、合并或发布前才运行完整套件。
+
+这既缩短执行时间，也减少 AI 处理无关错误输出和日志的 Token。
+
+### 30.4 结构化错误与日志
+
+应用日志应支持机器和 AI 高效定位问题。
+
+业务层优先输出结构化错误，例如：
+
+```text
+code=PROVIDER_TIMEOUT
+provider=comfyui-local
+job_id=128
+retryable=true
+```
+
+完整原始 Provider / ComfyUI 日志单独保存，只有需要时再读取。
+
+避免普通故障直接向用户或 Codex 输出几千行混合日志。
+
+### 30.5 测试本身也是 Token 优化工具
+
+自动测试给出明确 PASS / FAIL，比 AI 反复人工推演状态更省上下文。
+
+特别是 Fake Provider、Contract Tests 和 Failure Scenarios，可以把大量“读日志 → 猜问题 → 重试”的工作变成确定性的短反馈。
+
+### 30.6 控制代码噪音
+
+- 使用清晰命名代替无价值注释。
+- 注释重点解释“为什么”和关键不变量，不解释显而易见的语句。
+- 避免重复封装、复制粘贴和无意义抽象。
+- 保持模块小而职责单一。
+- Provider-specific 逻辑限制在 Adapter / Profile / Validator 内，不向 Core 泄漏。
+
+代码量本身不是主要 Token 成本；**结构混乱、耦合和重复理解才是长期成本。**
+
+---
+
+## 31. Codex Definition of Done 原则
+
+未来 Codex 的“目标”任务不应只以“代码写完”为完成条件。
+
+默认 Definition of Done 应包含：
+
+1. 功能符合目标和现有架构约束。
+2. 新增 / 修改业务逻辑具备对应自动测试。
+3. 修 Bug 时增加永久回归测试。
+4. Provider 变更通过对应 Contract Tests。
+5. UI 行为变化通过相关 E2E。
+6. Targeted Tests 全部通过。
+7. 类型检查 / Lint / 数据库迁移检查通过。
+8. 完成前运行规定范围的 `verify.py`。
+9. 不通过删除测试或弱化断言规避问题。
+10. 如果某测试无法执行，必须明确报告原因和未验证风险。
+
+长期目标是把开发过程变成：
+
+```text
+用户决定产品行为
+        ↓
+Codex 实现
+        ↓
+自动测试 / 故障注入 / 验收
+        ↓
+Codex 修复
+        ↓
+机器确认行为正确
+        ↓
+用户重点检查最终体验与视觉质量
+```
+
+这样尽可能把重复性的测试和修 Bug 工作交给自动化，把人工精力保留在产品决策、交互体验和生成质量判断上。
