@@ -4,6 +4,9 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。Codex
 
 ## 核心文档
 
+- [V0.1 第一版开发任务](./V0.1_DEVELOPMENT_TASKS.md)  
+  **第一版的主执行清单。** 按 Phase、目标任务、依赖和 Gate 验收点拆分，可直接作为 Codex “目标”开发的任务来源。
+
 - [产品与架构规划](./ShotMill_产品与架构规划.md)  
   产品边界、Provider 架构、Task / Job / Result、Context、Queue、Remote Monitor、整体技术方向。
 
@@ -41,5 +44,6 @@ Playwright / Visual Regression 固化
 2. UI 行为以 `UI_UX_SPEC.md` 为准。
 3. 测试和验收以 `TEST_STRATEGY.md` 为准。
 4. 产品边界和核心架构以 `ShotMill_产品与架构规划.md` 为准。
+5. 具体开发顺序和 V0.1 Gate 以 `V0.1_DEVELOPMENT_TASKS.md` 为准。
 
 后续落地根目录 `AGENTS.md` 时，应把本页作为文档导航入口，避免 Codex 每次扫描整个仓库和所有文档。
