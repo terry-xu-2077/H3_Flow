@@ -1,9 +1,9 @@
-# H3 Flow 测试策略
+# ShotMill 测试策略
 
 > 状态：规划阶段  
 > 最后更新：2026-09-11
 
-本文件定义 H3 Flow 的自动测试、回归测试、故障注入和 Codex 验收原则。
+本文件定义 ShotMill 的自动测试、回归测试、故障注入和 Codex 验收原则。
 
 目标不是追求形式上的测试覆盖率，而是让以下行为能够被机器持续验证：
 
@@ -168,7 +168,7 @@ Fake Provider 应输出可预测结果，便于断言 Scheduler / Job / Result �
 
 ```text
 FS-001 Provider 在 60% 断线
-FS-002 H3 Flow 在 Running Job 中退出并重启
+FS-002 ShotMill 在 Running Job 中退出并重启
 FS-003 Provider 重启后远端 Job 仍存在
 FS-004 Provider 重启后远端 Job 丢失
 FS-005 Result 已生成但回调丢失
@@ -195,7 +195,7 @@ FS-015 API timeout / rate limit
 默认启动：
 
 ```text
-H3 Flow Backend
+ShotMill Backend
 + Desktop React
 + Mobile React
 + Fake Providers
@@ -351,7 +351,7 @@ python scripts/verify.py --full
 先增加回归测试，遵循现有 Scheduler 状态机，完成相关验收。
 ```
 
-而不是在每次目标里重新解释整个 H3 Flow 架构。
+而不是在每次目标里重新解释整个 ShotMill 架构。
 
 ---
 

@@ -1,10 +1,10 @@
-# H3 Flow 文档索引
+# ShotMill 文档索引
 
-H3 Flow 的开发文档按职责拆分，避免单个文档无限膨胀。Codex / 开发者应按任务只读取必要文档。
+ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。Codex / 开发者应按任务只读取必要文档。
 
 ## 核心文档
 
-- [产品与架构规划](./H3_Flow_产品与架构规划.md)  
+- [产品与架构规划](./ShotMill_产品与架构规划.md)  
   产品边界、Provider 架构、Task / Job / Result、Context、Queue、Remote Monitor、整体技术方向。
 
 - [UI / UX 开发规范](./UI_UX_SPEC.md)  
@@ -40,6 +40,6 @@ Playwright / Visual Regression 固化
 1. 明确的新需求 / 最新决策优先。
 2. UI 行为以 `UI_UX_SPEC.md` 为准。
 3. 测试和验收以 `TEST_STRATEGY.md` 为准。
-4. 产品边界和核心架构以 `H3_Flow_产品与架构规划.md` 为准。
+4. 产品边界和核心架构以 `ShotMill_产品与架构规划.md` 为准。
 
 后续落地根目录 `AGENTS.md` 时，应把本页作为文档导航入口，避免 Codex 每次扫描整个仓库和所有文档。

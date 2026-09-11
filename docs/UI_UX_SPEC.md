@@ -1,15 +1,15 @@
-# H3 Flow UI / UX 开发规范
+# ShotMill UI / UX 开发规范
 
 > 状态：产品规划 / UI 开发基线  
 > 最后更新：2026-09-11  
 > 适用范围：Desktop UI、Mobile Remote Monitor、`/dev/ui` 开发模式页面  
 > 默认 UI 库：https://github.com/terry-xu-2077/Terry_React_UI_Library
 
-本文档不是一份单纯的视觉风格说明，而是 **H3 Flow 前端实现、交互行为、UI 回归和 Codex 验收的开发协议**。
+本文档不是一份单纯的视觉风格说明，而是 **ShotMill 前端实现、交互行为、UI 回归和 Codex 验收的开发协议**。
 
 目标是尽可能在第一版开发前就统一交互规律，避免应用完成后出现大量“每个地方都有一点不顺手、需要逐项描述和返工”的问题。
 
-H3 Flow 的 UI 开发采用以下原则：
+ShotMill 的 UI 开发采用以下原则：
 
 > **先把交互手感做对，再接真实后端。**
 
@@ -19,7 +19,7 @@ H3 Flow 的 UI 开发采用以下原则：
 
 ## 1. 最终产品体验目标
 
-H3 Flow 的最终体验不是传统 AI 工具的“参数控制台”，也不是 ComfyUI 的另一层包装。
+ShotMill 的最终体验不是传统 AI 工具的“参数控制台”，也不是 ComfyUI 的另一层包装。
 
 它应该更接近一个高效、安静、可靠的 **素材生产工作台**：
 
@@ -78,7 +78,7 @@ UI 的首要目标不是展示“功能很多”，而是让这条主流程连�
 
 ### 2.1 `/dev/ui` 是正式开发工具，不是临时 Demo
 
-H3 Flow 必须提供独立的 UI Development Mode，例如：
+ShotMill 必须提供独立的 UI Development Mode，例如：
 
 ```text
 /dev/ui
@@ -193,19 +193,19 @@ No assets
 
 ## 3. Terry React UI Library 使用原则
 
-H3 Flow 默认使用：
+ShotMill 默认使用：
 
 https://github.com/terry-xu-2077/Terry_React_UI_Library
 
 ### 3.1 基本规则
 
 - 已有控件优先直接复用。
-- 不为 H3 Flow 重写一套已有基础组件。
+- 不为 ShotMill 重写一套已有基础组件。
 - 如果出现通用 UI 需求，优先新增到 Terry React UI Library。
 - 新增组件必须保持向后兼容。
 - 不允许修改现有组件导出路径。
 - 不允许移动现有公共组件目录导致 RulesMD Editor 失效。
-- 不允许为了 H3 Flow 私自改变旧组件 public props 语义。
+- 不允许为了 ShotMill 私自改变旧组件 public props 语义。
 
 ### 3.2 什么进入共享 UI 库
 
@@ -226,7 +226,7 @@ https://github.com/terry-xu-2077/Terry_React_UI_Library
 - 通用 Overlay / Portal 基础设施
 - 通用 Virtual List / Scroll Container（如需要）
 
-### 3.3 什么只留在 H3 Flow
+### 3.3 什么只留在 ShotMill
 
 包含业务语义的组件：
 
@@ -235,7 +235,7 @@ https://github.com/terry-xu-2077/Terry_React_UI_Library
 - TaskChainView
 - ContextLink
 - AssetCard
-- AssetPicker 的 H3 Flow 业务层
+- AssetPicker 的 ShotMill 业务层
 - QueueMonitor
 - GenerationResultCard
 - ProviderSettings
@@ -244,7 +244,7 @@ https://github.com/terry-xu-2077/Terry_React_UI_Library
 
 原则：
 
-> **共享库负责积木，H3 Flow 负责产品结构。**
+> **共享库负责积木，ShotMill 负责产品结构。**
 
 ---
 
@@ -786,7 +786,7 @@ Remote Monitor
 
 ## 14. Overlay / Dialog / Popover 规范
 
-吸收 RulesMD Editor 的长期交互经验，H3 Flow 从第一天建立统一 Overlay System。
+吸收 RulesMD Editor 的长期交互经验，ShotMill 从第一天建立统一 Overlay System。
 
 ### 14.1 Portal
 
@@ -1038,7 +1038,7 @@ Bug：Dropdown 在窗口底部向上展开时顶部选项被裁切
 
 避免重复 RulesMD Editor 后期出现的大型单文件不断膨胀问题。
 
-H3 Flow 从第一版开始优先：
+ShotMill 从第一版开始优先：
 
 ```text
 features/
@@ -1053,7 +1053,7 @@ components/
   business components
 
 ui/
-  H3 Flow adapters around Terry UI Library
+  ShotMill adapters around Terry UI Library
 ```
 
 一个页面组件不应长期同时承担：
@@ -1072,7 +1072,7 @@ ui/
 ## 24. CSS 原则
 
 - 共享视觉变量优先进入 Terry React UI Library。
-- H3 Flow 业务 CSS 不深入依赖共享组件的内部 DOM 结构。
+- ShotMill 业务 CSS 不深入依赖共享组件的内部 DOM 结构。
 - 避免大量 `!important` 补丁。
 - 避免连续增加 `xxx-fix.css`、`xxx-polish.css` 作为长期结构。
 - 如果同一种视觉问题在多个页面出现，应回到基础组件 / Design Token 修复。
@@ -1130,7 +1130,7 @@ Codex 修改 UI 时：
 
 ## 26. UI 阶段验收方式
 
-H3 Flow 的 UI 开发应分为三个验收层：
+ShotMill 的 UI 开发应分为三个验收层：
 
 ### A. 手感验收
 
@@ -1191,7 +1191,7 @@ Codex / Playwright 保证：
 
 RulesMD Editor 经过长期反复打磨后已经证明：大量真实 UI 问题往往来自非常细的交互边界，例如菜单展开方向、弹窗层级、导航历史、筛选状态、组件尺寸、编辑状态保留等。
 
-H3 Flow 不复制 RulesMD Editor 的业务 UI，但吸收其开发经验：
+ShotMill 不复制 RulesMD Editor 的业务 UI，但吸收其开发经验：
 
 - Overlay / Dialog 从第一天统一。
 - 高频操作不能依赖隐藏入口。
@@ -1209,7 +1209,7 @@ H3 Flow 不复制 RulesMD Editor 的业务 UI，但吸收其开发经验：
 2. **`/dev/ui` 是长期保留的交互实验场。**
 3. **用户主要负责判断“手感”，Codex 负责让行为稳定可回归。**
 4. **共享 UI 由 Terry React UI Library 统一。**
-5. **H3 Flow 不重复实现已有基础控件。**
+5. **ShotMill 不重复实现已有基础控件。**
 6. **卡片服务对象，列表 / 表格服务高密度信息。**
 7. **媒体内容优先，装饰退后。**
 8. **低饱和、中性、克制，状态色才高亮。**

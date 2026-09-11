@@ -1,21 +1,21 @@
-# H3 Flow 产品与架构规划
+# ShotMill 产品与架构规划
 
 > 状态：产品规划阶段  
 > 最后更新：2026-09-11  
-> 默认仓库：https://github.com/terry-xu-2077/H3_Flow  
+> 默认仓库：https://github.com/terry-xu-2077/TerryShotMill  
 > 当前重点参考模型：https://github.com/MiniMax-AI/MiniMax-H3
 
 ---
 
 ## 1. 项目定位
 
-H3 Flow 是一个面向 AI 视频生产流程的**素材生成平台**。
+ShotMill 是一个面向 AI 视频生产流程的**素材生成平台**。
 
 它不承担剪辑、时间线、字幕、转场、音视频拼接、成片包装等 NLE / 后期功能。核心目标只有一个：
 
 > 把已经准备好的剧本和项目资产，高效地转化为一批可批量生成、可追踪、可修改、可重新生成的视频素材任务。
 
-虽然项目当前以 MiniMax-H3 为首个重点生成模型，因此沿用 H3 Flow 名称，但**系统架构不绑定 H3，也不绑定 ComfyUI、Qwen 或任何特定模型 / 厂商 API**。
+虽然项目当前以 MiniMax-H3 为首个重点生成模型，但**系统架构不绑定 H3，也不绑定 ComfyUI、Qwen 或任何特定模型 / 厂商 API**。
 
 ### 1.1 核心体验
 
@@ -26,7 +26,7 @@ H3 Flow 是一个面向 AI 视频生产流程的**素材生成平台**。
 5. 人工快速检查或修改。
 6. 重复以上过程，直到一批任务进入 Ready 状态。
 7. 点击“批量生成”。
-8. H3 Flow 按依赖和队列自动调用所选视频生成 Provider。
+8. ShotMill 按依赖和队列自动调用所选视频生成 Provider。
 9. 用户可离开电脑，通过手机查看进度和结果。
 10. 返回后快速审核：满意则通过 / 导出，不满意则编辑并重新生成。
 
@@ -38,7 +38,7 @@ H3 Flow 是一个面向 AI 视频生产流程的**素材生成平台**。
 
 ## 2. 明确不做
 
-H3 Flow 不计划承担：
+ShotMill 不计划承担：
 
 - 视频剪辑时间线
 - 多轨编辑
@@ -56,7 +56,7 @@ H3 Flow 不计划承担：
 
 ## 3. 最重要的架构原则：双 Provider 层
 
-H3 Flow 核心不应绑定任何具体 AI 模型。系统至少抽象出两类独立 Provider：
+ShotMill 核心不应绑定任何具体 AI 模型。系统至少抽象出两类独立 Provider：
 
 ### 3.1 Prompt AI Provider
 
@@ -131,14 +131,14 @@ Generation Profile: FutureVideoModel Cinematic
 
 ---
 
-## 4. H3 Flow 是 Source of Truth
+## 4. ShotMill 是 Source of Truth
 
-项目、资产、Task、Prompt、Job、Result、Context、Queue 都由 H3 Flow Core 管理。
+项目、资产、Task、Prompt、Job、Result、Context、Queue 都由 ShotMill Core 管理。
 
 任何 Provider 都只是执行端。
 
 ```text
-                         H3 FLOW CORE
+                         SHOTMILL CORE
 
  Project / Asset / Task / Job / Result / Context / Queue
                          │
@@ -260,7 +260,7 @@ Concurrency
 Default Timeout
 ```
 
-ComfyUI 是第一阶段重点 Provider Adapter，但不是 H3 Flow Core 的必选依赖。
+ComfyUI 是第一阶段重点 Provider Adapter，但不是 ShotMill Core 的必选依赖。
 
 ### 6.3 凭据安全
 
@@ -346,7 +346,7 @@ Asset
 
 ## 9. Task：核心业务对象
 
-H3 Flow 以 Task / Shot 为中心，而不是以某个模型或工作流为中心。
+ShotMill 以 Task / Shot 为中心，而不是以某个模型或工作流为中心。
 
 ```text
 Task
@@ -433,7 +433,7 @@ Prompt Composer 不绑定 Qwen，也不绑定 H3 Prompt 格式。
 PromptRequest
 ├─ system_context
 │  ├─ Generation Model Skill
-│  ├─ H3 Flow Rules
+│  ├─ ShotMill Rules
 │  └─ Project Skill
 ├─ script_source
 ├─ user_intent
@@ -546,7 +546,7 @@ Task Chain 是生成任务之间的顺序、依赖和上下文关系，不是剪
 - https://github.com/j955229/ComfyUI-MiniMax-H3-Motion-Director
 - https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context
 
-但 `latent_context` 不是 H3 Flow Core 的硬依赖。
+但 `latent_context` 不是 ShotMill Core 的硬依赖。
 
 ### C. Context Link
 
@@ -617,7 +617,7 @@ F
 - 单任务重试
 - 从失败处继续
 - 暂停 / 恢复 / 取消
-- H3 Flow 重启后恢复
+- ShotMill 重启后恢复
 - Provider / ComfyUI 重启后恢复
 
 ---
@@ -709,7 +709,7 @@ provider.status_changed
 
 ## 18. 前端 UI 规范
 
-H3 Flow 默认使用：
+ShotMill 默认使用：
 
 https://github.com/terry-xu-2077/Terry_React_UI_Library
 
@@ -717,15 +717,15 @@ https://github.com/terry-xu-2077/Terry_React_UI_Library
 
 > 现有控件和样式优先直接复用；必要时新增通用控件，但不得破坏现有 API、组件路径和导出出口。
 
-因为该库同时被 RulesMD Editor 使用，禁止为了 H3 Flow 移动或重命名现有组件、改变 public props 或现有 export path。
+因为该库同时被 RulesMD Editor 使用，禁止为了 ShotMill 移动或重命名现有组件、改变 public props 或现有 export path。
 
-通用基础组件进入共享 UI Library；H3 Flow 业务组件留在本项目。
+通用基础组件进入共享 UI Library；ShotMill 业务组件留在本项目。
 
 例如：
 
 **共享库：** Card、ProgressBar、Tabs、Toast、Popover、SegmentedControl、EmptyState、通用媒体预览。
 
-**H3 Flow：** TaskCard、AssetCard、ResultCard、QueuePanel、PromptComposer、ContextLink、TaskChainView、ProviderSettings、ProductionMonitor。
+**ShotMill：** TaskCard、AssetCard、ResultCard、QueuePanel、PromptComposer、ContextLink、TaskChainView、ProviderSettings、ProductionMonitor。
 
 视觉原则：
 
@@ -781,9 +781,9 @@ https://github.com/terry-xu-2077/Terry_React_UI_Library
 
 ## 20. ComfyUI 的正确定位
 
-ComfyUI 是**一个 Video Generation Provider Adapter / Backend 类型**，不是 H3 Flow Core 本身。
+ComfyUI 是**一个 Video Generation Provider Adapter / Backend 类型**，不是 ShotMill Core 本身。
 
-第一阶段可以开发 `H3 Flow ComfyUI Bridge / H3 Flow Nodes`，负责：
+第一阶段可以开发 `ShotMill ComfyUI Bridge / ShotMill Nodes`，负责：
 
 ### Task Input
 
@@ -864,7 +864,7 @@ Project/context/
 ## 23. 应用整体服务结构
 
 ```text
-                         H3 FLOW
+                         SHOTMILL
 
 ┌─────────────────────────────────────────────┐
 │                 Backend / Core              │
@@ -966,8 +966,8 @@ Approve / Edit / Regenerate / Export
 
 ## 26. 当前产品原则
 
-1. **H3 Flow 是素材生成平台，不是剪辑工具。**
-2. **H3 Flow Core 不绑定 H3、Qwen、ComfyUI 或任何厂商 API。**
+1. **ShotMill 是素材生成平台，不是剪辑工具。**
+2. **ShotMill Core 不绑定 H3、Qwen、ComfyUI 或任何厂商 API。**
 3. **Prompt AI 与 Video Generation 是两个独立 Provider 层。**
 4. **Provider 以 Capability 驱动，不以厂商名写死逻辑。**
 5. **Task 是核心业务对象，具体模型 / 工作流只是执行配置。**
@@ -1032,7 +1032,7 @@ https://github.com/terry-xu-2077/Terry_React_UI_Library
 
 ## 29. 自动化测试与 Codex 目标驱动开发
 
-H3 Flow 计划主要在本地通过 Codex 应用以“目标”的方式持续开发，因此测试体系必须从第一批业务代码开始建立，而不是在项目后期补齐。
+ShotMill 计划主要在本地通过 Codex 应用以“目标”的方式持续开发，因此测试体系必须从第一批业务代码开始建立，而不是在项目后期补齐。
 
 目标是让常规开发和修 Bug 尽可能形成以下闭环：
 
@@ -1103,7 +1103,7 @@ Prompt Provider 同样验证标准输入、结构化输出、多模态能力、�
 
 #### E2E Tests
 
-使用 Playwright 启动真实 H3 Flow Backend + Frontend + Fake Provider，自动模拟用户操作。
+使用 Playwright 启动真实 ShotMill Backend + Frontend + Fake Provider，自动模拟用户操作。
 
 覆盖主闭环：
 
@@ -1160,7 +1160,7 @@ Scheduler / Provider / 文件系统相关测试应主动制造异常，而不是
 重点场景包括：
 
 - Provider 在 Job 运行中断开
-- H3 Flow 在 Job 运行中退出并重启
+- ShotMill 在 Job 运行中退出并重启
 - ComfyUI / Provider 重启
 - Asset 文件丢失 / 移动
 - Provider 返回未知 Job ID
@@ -1220,7 +1220,7 @@ python scripts/verify.py --full
 AGENTS.md
 
 docs/
-├─ H3_Flow_产品与架构规划.md
+├─ ShotMill_产品与架构规划.md
 ├─ TEST_STRATEGY.md
 ├─ ARCHITECTURE.md
 ├─ PROVIDERS.md
@@ -1247,7 +1247,7 @@ scripts/
 
 ## 30. Token 成本与 AI 开发效率原则
 
-H3 Flow 的开发会长期使用 Codex / AI Coding Agent，因此 Token 成本应作为工程效率的一部分主动优化。
+ShotMill 的开发会长期使用 Codex / AI Coding Agent，因此 Token 成本应作为工程效率的一部分主动优化。
 
 目标不是“少写代码”，而是减少：
 
