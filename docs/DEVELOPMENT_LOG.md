@@ -17,7 +17,8 @@
 - 建立 FastAPI 后端骨架和健康检查。
 - 接入并锁定 Terry React UI Library 版本。
 - 建立 Windows PowerShell 7、Python、前端、浏览器端和 Tauri 验收流程。
-- 新增根目录 `Start-UI.ps1`，用于浏览器 UI 热更新或 Tauri 桌面壳开发。
+- 新增可双击的根目录 `启动 ShotMill UI.bat`；它固定调用 PowerShell 7，并通过 `Start-UI.ps1` 启动浏览器 UI 热更新环境。
+- `Start-UI.ps1` 同时保留 `-Desktop` 参数，用于 Tauri 桌面壳开发。
 
 #### App Shell 与任务工作区
 
