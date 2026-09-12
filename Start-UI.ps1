@@ -11,10 +11,6 @@ $Utf8NoBom = [System.Text.UTF8Encoding]::new($false)
 $global:OutputEncoding = $Utf8NoBom
 chcp.com 65001 > $null
 
-if ($PSVersionTable.PSEdition -ne 'Core' -or $PSVersionTable.PSVersion.Major -ne 7) {
-    throw '请使用 PowerShell 7 运行此脚本。'
-}
-
 $ProjectRoot = $PSScriptRoot
 $FrontendRoot = Join-Path $ProjectRoot 'frontend'
 $UiUrl = 'http://127.0.0.1:1420/dev/ui'

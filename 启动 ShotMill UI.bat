@@ -2,18 +2,16 @@
 setlocal
 chcp 65001 >nul
 
-set "SHOTMILL_PWSH=C:\Program Files\PowerShell\7\pwsh.exe"
-
-if not exist "%SHOTMILL_PWSH%" (
-    echo [ShotMill] 未找到 PowerShell 7：
-    echo %SHOTMILL_PWSH%
+where powershell >nul 2>nul
+if errorlevel 1 (
+    echo [ShotMill] 未找到系统 PowerShell。
     echo.
-    echo 请安装 PowerShell 7 后重试。
+    echo 请检查系统 PATH 后重试。
     pause
     exit /b 1
 )
 
-"%SHOTMILL_PWSH%" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Start-UI.ps1"
+powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Start-UI.ps1"
 set "SHOTMILL_EXIT_CODE=%ERRORLEVEL%"
 
 if not "%SHOTMILL_EXIT_CODE%"=="0" (
