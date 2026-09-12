@@ -45,30 +45,11 @@ Write-Host "地址：$UiUrl"
 Write-Host '模式：浏览器 UI 工作台（支持热更新）'
 Write-Host '按 Ctrl+C 停止。' -ForegroundColor DarkGray
 
-$BrowserJob = $null
-if (-not $NoBrowser) {
-    $BrowserJob = Start-Job -ArgumentList $UiUrl -ScriptBlock {
-        param($Url)
-        for ($Attempt = 0; $Attempt -lt 50; $Attempt++) {
-            try {
-                Invoke-WebRequest -Uri $Url -Method Head -TimeoutSec 1 -UseBasicParsing | Out-Null
-                Start-Process $Url
-                return
-            }
-            catch {
-                Start-Sleep -Milliseconds 200
-            }
-        }
-    }
-}
-
-try {
+if ($NoBrowser) {
     & pnpm --dir $FrontendRoot dev
     if ($LASTEXITCODE -ne 0) { throw '浏览器 UI 开发环境异常退出。' }
+    return
 }
-finally {
-    if ($BrowserJob) {
-        Stop-Job -Job $BrowserJob -ErrorAction SilentlyContinue
-        Remove-Job -Job $BrowserJob -Force -ErrorAction SilentlyContinue
-    }
-}
+
+& pnpm --dir $FrontendRoot dev -- --open /dev/ui
+if ($LASTEXITCODE -ne 0) { throw '浏览器 UI 开发环境异常退出。' }

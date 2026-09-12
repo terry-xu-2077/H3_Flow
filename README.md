@@ -18,11 +18,11 @@ pnpm --dir frontend install
 
 ## 启动
 
-日常打磨 UI 时，直接双击根目录的 `启动 ShotMill UI.bat`。它会使用系统默认 PowerShell 启动开发服务器、自动打开 `/dev/ui`，并保持热更新。
+日常打磨 UI 时，直接双击根目录的 `启动项目.bat`。该入口参考 Rulesmd_editor：BAT 调用系统默认 PowerShell 执行 `scripts/start-dev.ps1`，自动检查前端与 Rust 环境并启动 Tauri 桌面开发窗口。`Start-UI.bat` 和 `启动 ShotMill UI.bat` 是兼容别名。
 
 也可以从 PowerShell 启动：
 
-打磨浏览器 UI（自动打开 `/dev/ui`，支持热更新）：
+启动浏览器 UI（自动打开 `/dev/ui`，支持热更新）：
 
 ```powershell
 & .\Start-UI.ps1
@@ -31,7 +31,7 @@ pnpm --dir frontend install
 需要在 Tauri 桌面壳中打磨时：
 
 ```powershell
-& .\Start-UI.ps1 -Desktop
+& .\scripts\start-dev.ps1
 ```
 
 也可以分别手动启动：
