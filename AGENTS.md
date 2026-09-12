@@ -1,9 +1,10 @@
 # ShotMill 开发导航
 
-ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器或 ComfyUI 外壳。项目以 Task 为核心，负责从剧本、项目资产和上下文生成可追踪、可恢复、可审核的视频素材；当前用户侧创作入口正在升级为 Scene → Shot → Storyboard 工作流。
+ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器或 ComfyUI 外壳。项目以 Generation Task 为核心执行对象，同时以 Scene → Shot → Storyboard 作为用户侧主要创作入口。
 
 ## 文档入口
 
+- Storyboard / Task 核心领域模型：`docs/STORYBOARD_TASK_MODEL.md`
 - 当前 Storyboard 开发顺序与 Gate：`docs/V0.2_STORYBOARD_DEVELOPMENT_TASKS.md`
 - V0.1 基础任务与总体 Phase：`docs/V0.1_DEVELOPMENT_TASKS.md`
 - 产品边界与核心架构：`docs/ShotMill_产品与架构规划.md`
@@ -25,15 +26,23 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 
 - ShotMill Core 不得绑定 H3、Qwen、ComfyUI 或具体厂商。
 - Prompt AI Provider 与 Video Generation Provider 必须独立。
-- Provider 行为由 Capability 驱动；专属字段只存在于 Adapter、Profile 或 Validator。
-- Task 是可变意图；Job 是不可变执行快照；Result 是不可变输出记录。
-- Storyboard 中的 Story Order 与 Generation Context 必须分离；排序变化不得静默改写历史 Job Context。
-- Shot 展示编号不是稳定 ID；Scene / Shot / Result / Context 关系必须使用稳定内部 ID。
+- Provider 行为由 Capability 驱动；专属字段只存在于 Adapter、Profile、Skill、Validator 或 Provider Parameter Schema。
+- **Storyboard Shot 与 Generation Task 不是同一个对象。**
+- **一个 Generation Task 可以覆盖多个 Storyboard Shot。**
+- **Domain 不得限制一个 Shot 只能属于一个历史 Generation Task。** 长镜头未来可能通过多个 Task continuation 生成。
+- **Story Order、Generation Grouping、Generation Context 必须是三套独立关系。**
+- Shot 不保存唯一 `task_id`；Shot / Task 关系使用独立 `TaskShotBinding`。
+- Result 属于 Job / Task；一个 Result 可以通过 `ResultShotSpan` 映射到多个 Storyboard Shot，不得假设 `1 Result = 1 Shot`。
+- Ready、Queued、Running、Failed 等执行状态属于 Generation Task；Shot 只可显示其所覆盖 Task 的生产摘要。
+- H3 当前约 15 秒单任务上限与多分镜 Prompt 能力必须由 Generation Profile / Capability 表达，不得写死在 Core。
+- Task 是可变生产意图；Job 是不可变执行快照；Job 必须保存当时的 TaskShotBindings、Prompt、Assets、Profile、Params 与 Context。
+- Storyboard 排序变化不得静默改写 Generation Grouping、历史 Job 或历史 Context。
+- Shot 展示编号不是稳定 ID；Scene / Shot / Task / Result / Context 关系必须使用稳定内部 ID。
 - 剧本原文、AI Prompt 与人工 Final Prompt 必须分离；后台操作不得覆盖人工 Final Prompt。
 - 项目业务引用使用 project-relative path 和 `asset_id`，不得传播绝对资产路径。
 - 重新生成不得覆盖历史 Result；Primary Result 变化必须正确传播 Context Stale。
 - Story Reel 仅用于按 Story Order 预览分镜和已有结果，不得演变为剪辑时间线、多轨、Trim、转场或关键帧编辑器。
-- UI 修改必须先阅读 `docs/UI_UX_SPEC.md`，Storyboard 相关任务同时阅读 `docs/V0.2_STORYBOARD_DEVELOPMENT_TASKS.md`；重要状态先进入 `/dev/ui`，再连接真实后端。
+- UI 修改必须先阅读 `docs/UI_UX_SPEC.md`；Storyboard / Task 相关任务必须先阅读 `docs/STORYBOARD_TASK_MODEL.md` 与 `docs/V0.2_STORYBOARD_DEVELOPMENT_TASKS.md`；重要状态先进入 `/dev/ui`，再连接真实后端。
 - 测试修改必须先阅读 `docs/TEST_STRATEGY.md`。
 
 ## 开发与验收
