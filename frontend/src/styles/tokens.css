@@ -1,0 +1,37 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+  --sm-bg: #0d0f12;
+  --sm-surface-1: #12151a;
+  --sm-surface-2: #181c22;
+  --sm-surface-3: #1e232b;
+  --sm-border: #292f38;
+  --sm-border-strong: #3a424e;
+  --sm-text: #e8ebef;
+  --sm-text-muted: #9199a5;
+  --sm-text-dim: #68717e;
+  --sm-accent: #e5aa51;
+  --sm-accent-soft: #3b2b18;
+  --sm-success: #61b58f;
+  --sm-danger: #dd726b;
+  --sm-warning: #d8a657;
+  --sm-radius-sm: 7px;
+  --sm-radius: 11px;
+  --sm-radius-lg: 16px;
+  --sm-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  --sm-fast: 140ms ease;
+
+  --tc-base: #12151a;
+  --tc-accent: #e5aa51;
+  --tc-effect: #61b58f;
+  --tc-text-main: #e8ebef;
+  --tc-text-bright: #ffffff;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { min-width: 320px; min-height: 100%; margin: 0; }
+body { background: var(--sm-bg); color: var(--sm-text); overflow: hidden; }
+button, input { font: inherit; }
+button { color: inherit; }

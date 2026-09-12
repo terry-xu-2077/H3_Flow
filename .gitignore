@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.venv/
+*.egg-info/
+.coverage
+.coverage.*
+htmlcov/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/playwright-report/
+frontend/test-results/
+frontend/blob-report/
+frontend/coverage/
+frontend/.vite/
+*.tsbuildinfo
+
+# Rust / Tauri
+frontend/src-tauri/target/
+frontend/src-tauri/gen/schemas/
+frontend/src-tauri/.cargo/
+
+# Local development
+.tmp/
+.temp/
+.cargo/
+.artifacts/
+frontend/.artifacts/
+.shotmill/
+.env
+.env.*
+!.env.example
+*.log
+*.pid
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
