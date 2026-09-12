@@ -1,10 +1,11 @@
 # ShotMill 开发导航
 
-ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器或 ComfyUI 外壳。项目以 Task 为核心，负责从剧本、项目资产和上下文生成可追踪、可恢复、可审核的视频素材。
+ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器或 ComfyUI 外壳。项目以 Task 为核心，负责从剧本、项目资产和上下文生成可追踪、可恢复、可审核的视频素材；当前用户侧创作入口正在升级为 Scene → Shot → Storyboard 工作流。
 
 ## 文档入口
 
-- 开发顺序与 Gate：`docs/V0.1_DEVELOPMENT_TASKS.md`
+- 当前 Storyboard 开发顺序与 Gate：`docs/V0.2_STORYBOARD_DEVELOPMENT_TASKS.md`
+- V0.1 基础任务与总体 Phase：`docs/V0.1_DEVELOPMENT_TASKS.md`
 - 产品边界与核心架构：`docs/ShotMill_产品与架构规划.md`
 - UI / UX 行为协议：`docs/UI_UX_SPEC.md`
 - 测试与故障注入：`docs/TEST_STRATEGY.md`
@@ -26,10 +27,13 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 - Prompt AI Provider 与 Video Generation Provider 必须独立。
 - Provider 行为由 Capability 驱动；专属字段只存在于 Adapter、Profile 或 Validator。
 - Task 是可变意图；Job 是不可变执行快照；Result 是不可变输出记录。
+- Storyboard 中的 Story Order 与 Generation Context 必须分离；排序变化不得静默改写历史 Job Context。
+- Shot 展示编号不是稳定 ID；Scene / Shot / Result / Context 关系必须使用稳定内部 ID。
 - 剧本原文、AI Prompt 与人工 Final Prompt 必须分离；后台操作不得覆盖人工 Final Prompt。
 - 项目业务引用使用 project-relative path 和 `asset_id`，不得传播绝对资产路径。
 - 重新生成不得覆盖历史 Result；Primary Result 变化必须正确传播 Context Stale。
-- UI 修改必须先阅读 `docs/UI_UX_SPEC.md`，重要状态先进入 `/dev/ui`，再连接真实后端。
+- Story Reel 仅用于按 Story Order 预览分镜和已有结果，不得演变为剪辑时间线、多轨、Trim、转场或关键帧编辑器。
+- UI 修改必须先阅读 `docs/UI_UX_SPEC.md`，Storyboard 相关任务同时阅读 `docs/V0.2_STORYBOARD_DEVELOPMENT_TASKS.md`；重要状态先进入 `/dev/ui`，再连接真实后端。
 - 测试修改必须先阅读 `docs/TEST_STRATEGY.md`。
 
 ## 开发与验收
