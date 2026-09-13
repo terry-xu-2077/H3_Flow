@@ -9,6 +9,7 @@ import "./styles/storyboard.css";
 import "./styles/composer.css";
 import "./styles/overlays.css";
 import "./styles/director.css";
+import "./styles/director-dialogs.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
