@@ -15,6 +15,7 @@ export function useAnchoredPosition(
   open: boolean,
   preferred: Placement = "down",
   maxPreferredHeight = 300,
+  matchAnchorWidth = false,
 ) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<PositionState>({
@@ -46,7 +47,10 @@ export function useAnchoredPosition(
       const maxHeight = Math.max(0, Math.min(maxPreferredHeight, available));
       const visibleHeight = Math.min(desiredHeight, maxHeight);
       const viewportWidth = window.innerWidth;
-      const width = Math.min(Math.max(anchorRect.width, surface.scrollWidth), viewportWidth - 16);
+      const maximumWidth = Math.max(0, viewportWidth - VIEWPORT_MARGIN * 2);
+      const width = matchAnchorWidth
+        ? Math.min(anchorRect.width, maximumWidth)
+        : Math.min(Math.max(anchorRect.width, surface.scrollWidth), maximumWidth);
       const left = Math.min(
         Math.max(VIEWPORT_MARGIN, anchorRect.left),
         Math.max(VIEWPORT_MARGIN, viewportWidth - width - VIEWPORT_MARGIN),
@@ -63,6 +67,7 @@ export function useAnchoredPosition(
           top: Math.max(VIEWPORT_MARGIN, top),
           left,
           width,
+          maxWidth: maximumWidth,
           maxHeight,
           visibility: "visible",
         },
@@ -76,7 +81,7 @@ export function useAnchoredPosition(
       window.removeEventListener("resize", update);
       document.removeEventListener("scroll", update, true);
     };
-  }, [anchorRef, maxPreferredHeight, open, preferred]);
+  }, [anchorRef, matchAnchorWidth, maxPreferredHeight, open, preferred]);
 
   return { surfaceRef, ...position };
 }
