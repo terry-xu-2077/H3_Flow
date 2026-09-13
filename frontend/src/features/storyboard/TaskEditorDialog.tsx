@@ -98,6 +98,8 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
   const promptAssets = useMemo(() => promptAssetsForTask(task, assets), [assets, task]);
   if (!task) return null;
 
+  const maxContextDuration = Math.max(1, Math.min(15, duration));
+
   const save = () => {
     onSave({
       title: taskTitle.trim() || task.title,
@@ -110,7 +112,7 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
         quality,
         generationMode,
         contextMode,
-        contextDurationSeconds,
+        contextDurationSeconds: Math.min(contextDurationSeconds, maxContextDuration),
       },
     });
     onClose();
@@ -233,9 +235,9 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
                     <input
                       type="number"
                       min={1}
-                      max={Math.max(1, Math.min(15, duration))}
+                      max={maxContextDuration}
                       value={contextDurationSeconds}
-                      onChange={(event) => setContextDurationSeconds(Math.max(1, Number(event.target.value) || 1))}
+                      onChange={(event) => setContextDurationSeconds(Math.min(maxContextDuration, Math.max(1, Number(event.target.value) || 1)))}
                     />
                     <em>秒</em>
                   </div>
@@ -283,8 +285,7 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
           )}
 
           <footer className="simple-prompt-footer">
-            <span><strong>@</strong> 输入 @ 可引用当前任务素材</span>
-            <span>AI 增强不会自动覆盖用户提示词</span>
+            <span><strong>@</strong> 输入 @ 引用当前任务资产</span>
           </footer>
         </section>
 
