@@ -42,13 +42,24 @@ function assetFormat(asset: ProjectAsset) {
   return match?.[1]?.toUpperCase() || asset.mediaType.toUpperCase();
 }
 
+function originalFileName(asset: ProjectAsset) {
+  const normalized = (asset.projectRelativePath || "").replaceAll("\\", "/");
+  return normalized.split("/").filter(Boolean).at(-1) || "—";
+}
+
 function mediaIcon(asset: ProjectAsset, size = 17) {
   if (asset.mediaType === "video") return <Film size={size} />;
   if (asset.mediaType === "audio") return <Music2 size={size} />;
   return <FileImage size={size} />;
 }
 
-function AssetPreview({ asset }: { asset?: ProjectAsset }) {
+function AssetPreview({
+  asset,
+  onRename,
+}: {
+  asset?: ProjectAsset;
+  onRename: (name: string) => void;
+}) {
   const previewRef = useRef<HTMLDivElement>(null);
 
   if (!asset) {
@@ -87,18 +98,23 @@ function AssetPreview({ asset }: { asset?: ProjectAsset }) {
       </div>
 
       <section className="project-asset-meta" aria-label="资产信息">
-        <header>
-          <div>
-            <strong>{asset.name}</strong>
-            <span>{categoryLabel[asset.category]} · {mediaLabel(asset)}</span>
-          </div>
-        </header>
+        <label className="project-asset-name-field">
+          <span>资产名</span>
+          <input
+            value={asset.name}
+            onChange={(event) => onRename(event.target.value)}
+            aria-label="资产名"
+            placeholder="输入资产名"
+          />
+          <small>任务提示词中的 @ 菜单会显示这个名称，不会修改原始文件名。</small>
+        </label>
+
         <dl>
           <div><dt>格式</dt><dd>{assetFormat(asset)}</dd></div>
           <div><dt>类型</dt><dd>{mediaLabel(asset)}</dd></div>
           <div><dt>分类</dt><dd>{categoryLabel[asset.category]}</dd></div>
           {typeof asset.durationSeconds === "number" && <div><dt>时长</dt><dd>{asset.durationSeconds.toFixed(1)} 秒</dd></div>}
-          <div className="is-wide"><dt>项目路径</dt><dd title={asset.projectRelativePath}>{asset.projectRelativePath || "—"}</dd></div>
+          <div className="is-wide"><dt>原始文件名</dt><dd title={originalFileName(asset)}>{originalFileName(asset)}</dd></div>
           <div className="is-wide"><dt>标签</dt><dd>{asset.tags.length ? asset.tags.join("、") : "—"}</dd></div>
         </dl>
       </section>
@@ -167,6 +183,10 @@ export function ProjectConfigPanel({ open, project, onClose, onSave }: Props) {
 
   const removeAsset = (assetId: string) => {
     setAssets((current) => current.filter((asset) => asset.id !== assetId));
+  };
+
+  const renameAsset = (assetId: string, name: string) => {
+    setAssets((current) => current.map((asset) => asset.id === assetId ? { ...asset, name } : asset));
   };
 
   return (
@@ -263,7 +283,10 @@ export function ProjectConfigPanel({ open, project, onClose, onSave }: Props) {
               </aside>
 
               <main className="project-asset-inspector" aria-label="资产预览和信息">
-                <AssetPreview asset={selectedAsset} />
+                <AssetPreview
+                  asset={selectedAsset}
+                  onRename={(name) => selectedAsset && renameAsset(selectedAsset.id, name)}
+                />
               </main>
             </div>
           )}
@@ -276,7 +299,7 @@ export function ProjectConfigPanel({ open, project, onClose, onSave }: Props) {
               title: title.trim(),
               description: description.trim(),
               useDescriptionForAiPrompt,
-            }, assets);
+            }, assets.map((asset) => ({ ...asset, name: asset.name.trim() || originalFileName(asset).replace(/\.[^.]+$/, "") || "未命名资产" })));
             onClose();
           }}>保存</Button>
         </footer>
