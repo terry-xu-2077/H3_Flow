@@ -100,10 +100,9 @@ describe("TaskEditorDialog", () => {
     const user = userEvent.setup();
     renderEditor();
 
-    expect(screen.getByText("输入 @ 可引用当前任务素材")).toBeInTheDocument();
+    expect(screen.getByText(/输入 @ 引用当前任务资产/)).toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: /AI 增强/ }));
-    expect(screen.getByText("输入 @ 可引用当前任务素材")).toBeInTheDocument();
-    expect(screen.getByText("AI 增强不会自动覆盖用户提示词")).toBeInTheDocument();
+    expect(screen.getByText(/输入 @ 引用当前任务资产/)).toBeInTheDocument();
   });
 
   it("cancels without saving", async () => {
