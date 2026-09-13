@@ -25,7 +25,7 @@ type PortalSelectProps = {
 export function PortalSelect({ value, options, onChange, ariaLabel, testId }: PortalSelectProps) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLButtonElement>(null);
-  const { surfaceRef, placement, style } = useAnchoredPosition(anchorRef, open);
+  const { surfaceRef, placement, style } = useAnchoredPosition(anchorRef, open, "down", 300, true);
   const zIndex = useOverlayZIndex(20);
   const selected = options.find((option) => option.value === value) ?? options[0];
 
