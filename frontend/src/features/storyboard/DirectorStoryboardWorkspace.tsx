@@ -123,7 +123,7 @@ export function DirectorStoryboardWorkspace({
     setDetailTaskId(null);
     setAdvancedTaskId(null);
     setMessage("");
-  }, [initialSnapshot, value]);
+  }, [initialSnapshot]);
 
   useEffect(() => {
     if (!focusTaskId || !snapshot.tasks.some((task) => task.id === focusTaskId)) return;
@@ -135,7 +135,6 @@ export function DirectorStoryboardWorkspace({
     () => snapshot.scenes.slice().sort((left, right) => left.orderKey.localeCompare(right.orderKey)),
     [snapshot.scenes],
   );
-  const selectedTask = selectedTaskId ? snapshot.tasks.find((task) => task.id === selectedTaskId) : undefined;
   const detailTask = detailTaskId ? snapshot.tasks.find((task) => task.id === detailTaskId) : undefined;
   const advancedTask = advancedTaskId ? snapshot.tasks.find((task) => task.id === advancedTaskId) : undefined;
   const defaultSceneId = scenes[0]?.id ?? "";
