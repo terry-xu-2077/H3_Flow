@@ -4,19 +4,22 @@ build-backend = "hatchling.build"
 
 [project]
 name = "shotmill"
-version = "0.1.0"
+version = "0.3.0"
 description = "Task-centered AI video asset production platform"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.116,<1",
   "uvicorn[standard]>=0.35,<1",
+  "sqlalchemy>=2.0,<3",
+  "alembic>=1.16,<2",
+  "httpx>=0.28,<1",
+  "python-multipart>=0.0.20,<1",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "httpx>=0.28,<1",
-  "pytest>=8.4,<9",
+  "pytest>=8.4,<10",
   "ruff>=0.12,<1",
 ]
 
