@@ -30,6 +30,8 @@ const categoryLabel: Record<ProjectAsset["category"], string> = {
   reference: "参考",
 };
 
+const categories = Object.entries(categoryLabel) as Array<[ProjectAsset["category"], string]>;
+
 function mediaLabel(asset: ProjectAsset) {
   if (asset.mediaType === "video") return "视频";
   if (asset.mediaType === "audio") return "音频";
@@ -53,12 +55,23 @@ function mediaIcon(asset: ProjectAsset, size = 17) {
   return <FileImage size={size} />;
 }
 
+function parseTags(value: string) {
+  return value
+    .split(/[，,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function AssetPreview({
   asset,
   onRename,
+  onCategoryChange,
+  onTagsChange,
 }: {
   asset?: ProjectAsset;
   onRename: (name: string) => void;
+  onCategoryChange: (category: ProjectAsset["category"]) => void;
+  onTagsChange: (tags: string[]) => void;
 }) {
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -98,24 +111,52 @@ function AssetPreview({
       </div>
 
       <section className="project-asset-meta" aria-label="资产信息">
-        <label className="project-asset-name-field">
-          <span>资产名</span>
-          <input
-            value={asset.name}
-            onChange={(event) => onRename(event.target.value)}
-            aria-label="资产名"
-            placeholder="输入资产名"
-          />
-          <small>任务提示词中的 @ 菜单会显示这个名称，不会修改原始文件名。</small>
-        </label>
+        <div className="project-asset-editable-meta">
+          <label className="project-asset-name-field">
+            <span>资产名</span>
+            <input
+              value={asset.name}
+              onChange={(event) => onRename(event.target.value)}
+              aria-label="资产名"
+              placeholder="输入资产名"
+            />
+            <small>任务提示词中的 @ 菜单显示此名称，不修改原始文件名。</small>
+          </label>
 
-        <dl>
+          <div className="project-asset-category-field">
+            <span>分类</span>
+            <div className="project-asset-category-options" role="group" aria-label="资产分类">
+              {categories.map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={asset.category === value ? "is-active" : ""}
+                  aria-pressed={asset.category === value}
+                  onClick={() => onCategoryChange(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <label className="project-asset-tags-field">
+            <span>标签</span>
+            <input
+              value={asset.tags.join("、")}
+              onChange={(event) => onTagsChange(parseTags(event.target.value))}
+              aria-label="资产标签"
+              placeholder="例如：雨夜、主角、旧港口"
+            />
+          </label>
+        </div>
+
+        <div className="project-asset-readonly-title">文件信息</div>
+        <dl className="project-asset-readonly-meta">
           <div><dt>格式</dt><dd>{assetFormat(asset)}</dd></div>
           <div><dt>类型</dt><dd>{mediaLabel(asset)}</dd></div>
-          <div><dt>分类</dt><dd>{categoryLabel[asset.category]}</dd></div>
           {typeof asset.durationSeconds === "number" && <div><dt>时长</dt><dd>{asset.durationSeconds.toFixed(1)} 秒</dd></div>}
           <div className="is-wide"><dt>原始文件名</dt><dd title={originalFileName(asset)}>{originalFileName(asset)}</dd></div>
-          <div className="is-wide"><dt>标签</dt><dd>{asset.tags.length ? asset.tags.join("、") : "—"}</dd></div>
         </dl>
       </section>
     </div>
@@ -185,8 +226,8 @@ export function ProjectConfigPanel({ open, project, onClose, onSave }: Props) {
     setAssets((current) => current.filter((asset) => asset.id !== assetId));
   };
 
-  const renameAsset = (assetId: string, name: string) => {
-    setAssets((current) => current.map((asset) => asset.id === assetId ? { ...asset, name } : asset));
+  const patchAsset = (assetId: string, patch: Partial<Pick<ProjectAsset, "name" | "category" | "tags">>) => {
+    setAssets((current) => current.map((asset) => asset.id === assetId ? { ...asset, ...patch } : asset));
   };
 
   return (
@@ -285,7 +326,9 @@ export function ProjectConfigPanel({ open, project, onClose, onSave }: Props) {
               <main className="project-asset-inspector" aria-label="资产预览和信息">
                 <AssetPreview
                   asset={selectedAsset}
-                  onRename={(name) => selectedAsset && renameAsset(selectedAsset.id, name)}
+                  onRename={(name) => selectedAsset && patchAsset(selectedAsset.id, { name })}
+                  onCategoryChange={(category) => selectedAsset && patchAsset(selectedAsset.id, { category })}
+                  onTagsChange={(tags) => selectedAsset && patchAsset(selectedAsset.id, { tags })}
                 />
               </main>
             </div>

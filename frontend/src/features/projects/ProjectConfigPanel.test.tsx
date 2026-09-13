@@ -34,7 +34,7 @@ describe("ProjectConfigPanel", () => {
     expect(within(dialog).getByRole("button", { name: /添加资产/ })).toBeInTheDocument();
   });
 
-  it("edits the asset display name without changing or exposing the original filename outside details", async () => {
+  it("edits display metadata while keeping original filename readonly", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn();
     renderPanel(onSave);
@@ -48,14 +48,22 @@ describe("ProjectConfigPanel", () => {
 
     await user.clear(nameInput);
     await user.type(nameInput, "林澜雨夜主视觉");
+    await user.click(within(dialog).getByRole("button", { name: "道具" }));
+    const tagsInput = within(dialog).getByRole("textbox", { name: "资产标签" });
+    await user.clear(tagsInput);
+    await user.type(tagsInput, "主视觉,雨夜");
+
     expect(within(dialog).getByText("林澜雨夜主视觉")).toBeInTheDocument();
     expect(within(dialog).getByText("linlan-rain.webp")).toBeInTheDocument();
+    expect(within(dialog).getByRole("group", { name: "资产分类" })).toBeInTheDocument();
 
     await user.click(within(dialog).getByRole("button", { name: "保存" }));
     expect(onSave).toHaveBeenCalledTimes(1);
     const savedAssets = onSave.mock.calls[0][1];
     expect(savedAssets[0]).toMatchObject({
       name: "林澜雨夜主视觉",
+      category: "prop",
+      tags: ["主视觉", "雨夜"],
       projectRelativePath: "assets/characters/linlan-rain.webp",
     });
   });
