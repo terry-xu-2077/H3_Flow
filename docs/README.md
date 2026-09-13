@@ -4,23 +4,26 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
 
 ## 当前必须优先阅读
 
+- [AI 提示词增强专项架构](./AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md)  
+  **AI Prompt Enhancement 的长期最高优先级架构文档。** 定义真实多模态输入、可选项目背景、可选上一任务摘要、H3 / Seedance 独立 Skill、Provider 媒体适配、revision 与 Capability。凡涉及 AI 提示词增强实现，优先读此文档。
+
 - [V0.8 AI 提示词增强与历史版本 UI 规范](./UI_V0.8_AI_PROMPT_ENHANCEMENT.md)  
-  **当前涉及任务编辑器 AI 增强页的最高优先级文档。** 定义 AI 增强历史下拉、空状态、可重复增强、Prompt Source、上一任务摘要上下文，以及用户 / AI 版本选择规则。
+  定义 AI 增强历史下拉、空状态、可重复增强、Prompt Source 和用户 / AI 版本选择。涉及 UI 时读此文档；增强后端输入语义以专项架构为准。
 
 - [V0.8 后端适配：AI 提示词增强与历史版本](./V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md)  
-  定义 Prompt Enhancement API、AI 版本历史模型、上一任务摘要上下文边界，以及从临时 `generationParams` 迁移到正式后端 revision 模型的方案。
+  **V0.8 版本增量。** 说明历史版本和现有前端过渡字段。长期实现以 AI 提示词增强专项架构为准。
 
 - [V0.6 项目配置与 H3 提示词编辑规范](./UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md)  
-  **当前涉及项目工作台顶部、项目配置、结果播放和 H3 提示词双模式的基础文档。** 定义返回首页、项目配置、卡片/列表共用工具栏、Result 播放，以及用户/AI 提示词各自的可视化/文本模式；AI 增强历史与上下文以 V0.8 为准。
+  **当前涉及项目工作台顶部、项目配置、结果播放和 H3 提示词双模式的基础文档。** 定义返回首页、项目配置、卡片/列表共用工具栏、Result 播放，以及用户/AI 提示词各自的可视化/文本模式。
 
 - [V0.6 后端适配增量](./V0.6_BACKEND_DELTA.md)  
-  **V0.5 Frontend Adapter 的增量。** 定义项目简介、AI 项目背景开关、项目资产 CRUD、Task Prompt Source、H3 编辑器偏好和 Result 播放数据；AI Prompt Enhancement 细节以 V0.8 为准。
+  **V0.5 Frontend Adapter 的增量。** 定义项目简介、AI 项目背景开关、项目资产 CRUD、Task Prompt Source、H3 编辑器偏好和 Result 播放数据。
 
 - [V0.5 Terry导演工作台 UI 基线](./UI_V0.5_PROJECT_WORKSPACE.md)  
   定义项目首页、项目工作台、列表 / 卡片双视图、右侧只读栏、底部状态栏和任务编辑弹窗的总体结构。未被后续版本覆盖的规则继续有效。
 
 - [V0.5 任务编辑窗细化规范](./UI_V0.5_TASK_EDITOR_REFINEMENT.md)  
-  定义任务标题区、紧凑生成参数、片段承接区间、固定少量候选项使用分段控件，以及下拉菜单宽度规则。其 AI 增强部分以 V0.8 为准。
+  定义任务标题区、紧凑生成参数、片段承接区间、固定少量候选项使用分段控件，以及下拉菜单宽度规则。
 
 - [V0.5 后端适配新前端方案](./V0.5_BACKEND_FRONTEND_ADAPTER.md)  
   后端 Frontend Adapter 基线。ProjectSummary、ProjectWorkspaceView、TaskSummary、TaskEditorView、Runtime、推荐 API、SSE 和 Gateway 仍然有效；新增字段以后续增量为准。
@@ -98,6 +101,32 @@ Result 属于 Job / Task 历史
 
 ---
 
+# AI 提示词增强心智
+
+```text
+用户描述
++ 当前任务真实图片 / 视频
++ 媒体角色
++ 可选项目背景
++ 可选上一任务摘要
+        ↓
+目标视频模型专属 Prompt Skill
+        ↓
+Prompt AI Provider Adapter
+        ↓
+AI Prompt Revision
+```
+
+关键规则：
+
+- 真实媒体是核心输入，资产名 / 引用标签不能代替媒体本体；
+- 上一任务摘要是**可选上下文**，不是默认必发；
+- 项目背景同样受用户开关控制；
+- H3 / Seedance 必须使用不同 Prompt Skill；
+- 前端只传 `assetId + role + context options`，媒体上传 / base64 / video_url / 抽帧属于 Provider Adapter。
+
+---
+
 # UI 开发顺序
 
 ```text
@@ -109,7 +138,7 @@ UI_V0.6_PROJECT_CONFIG_H3_EDITOR
    ↓
 UI_V0.5_TASK_EDITOR_REFINEMENT
    ↓
-UI_V0.8_AI_PROMPT_ENHANCEMENT（涉及 AI 增强 / 历史 / 上一任务摘要上下文时）
+UI_V0.8_AI_PROMPT_ENHANCEMENT（涉及 AI 增强 UI / 历史时）
    ↓
 UI_DIRECTOR_MODE_GUIDE 中未冲突的防参数墙 / 查看编辑分离规则
    ↓
@@ -120,11 +149,19 @@ UI_UX_SPEC
 人工打磨视觉与交互
    ↓
 回归测试
-   ↓
-V0.5 Backend Adapter + V0.6 Delta + V0.8 AI Enhancement 接真实后端
 ```
 
-基础 UI 尚未稳定前，不应把真实 Provider / Queue / 数据库逻辑直接绑进 React 组件。
+AI 提示词增强实现则优先遵守：
+
+```text
+AI_PROMPT_ENHANCEMENT_ARCHITECTURE
+   ↓
+V0.8_BACKEND_AI_PROMPT_ENHANCEMENT（版本迁移）
+   ↓
+V0.6_BACKEND_DELTA
+   ↓
+V0.5_BACKEND_FRONTEND_ADAPTER
+```
 
 ---
 
@@ -133,16 +170,17 @@ V0.5 Backend Adapter + V0.6 Delta + V0.8 AI Enhancement 接真实后端
 发生冲突时：
 
 1. 明确的新需求 / 最新决策；
-2. **`UI_V0.8_AI_PROMPT_ENHANCEMENT.md`：AI 增强历史、增强按钮、Prompt Source 与上一任务摘要上下文；**
-3. `UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md`：项目工作台顶部、项目配置、H3 Prompt 与 Result；
-4. `UI_V0.5_PROJECT_WORKSPACE.md`：总体页面结构与交互；
-5. `UI_V0.5_TASK_EDITOR_REFINEMENT.md`：任务配置、Context、控件细化；
-6. `V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md` + `V0.6_BACKEND_DELTA.md` + `V0.5_BACKEND_FRONTEND_ADAPTER.md`：前后端边界；
-7. `UI_DIRECTOR_MODE_GUIDE.md`：查看/编辑分离、防参数墙、用户术语等未冲突规则；
-8. `STORYBOARD_TASK_MODEL.md`：领域关系；
-9. `UI_UX_SPEC.md`：通用 UI 行为；
-10. `TEST_STRATEGY.md`：测试与验收；
-11. `ShotMill_产品与架构规划.md`：其他核心架构；
-12. V0.2 / V0.1：历史能力基线。
+2. **`AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`：AI 提示词增强输入、媒体、上下文、Skill、Provider 与 revision 架构；**
+3. `UI_V0.8_AI_PROMPT_ENHANCEMENT.md`：AI 增强 UI、历史、Prompt Source；
+4. `UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md`：项目工作台顶部、项目配置、H3 Prompt 与 Result；
+5. `UI_V0.5_PROJECT_WORKSPACE.md`：总体页面结构与交互；
+6. `UI_V0.5_TASK_EDITOR_REFINEMENT.md`：任务配置、Context、控件细化；
+7. `V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md` + `V0.6_BACKEND_DELTA.md` + `V0.5_BACKEND_FRONTEND_ADAPTER.md`：版本适配和前后端边界；
+8. `UI_DIRECTOR_MODE_GUIDE.md`：查看/编辑分离、防参数墙、用户术语等未冲突规则；
+9. `STORYBOARD_TASK_MODEL.md`：领域关系；
+10. `UI_UX_SPEC.md`：通用 UI 行为；
+11. `TEST_STRATEGY.md`：测试与验收；
+12. `ShotMill_产品与架构规划.md`：其他核心架构；
+13. V0.2 / V0.1：历史能力基线。
 
 根目录 `AGENTS.md` 保持为轻量开发导航。
