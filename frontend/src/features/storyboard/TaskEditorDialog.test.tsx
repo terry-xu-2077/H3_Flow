@@ -18,6 +18,7 @@ function renderEditor(onSave = vi.fn(), onClose = vi.fn(), task?: GenerationTask
           open
           task={task ?? structuredClone(mockStoryboard.tasks[0])}
           assets={mockProjectAssets}
+          projectContext={{ description: "雨夜旧港口项目背景", useDescriptionForAiPrompt: true }}
           onClose={onClose}
           onSave={onSave}
         />
@@ -42,6 +43,8 @@ describe("TaskEditorDialog", () => {
     expect(within(dialog).getByRole("tab", { name: "不承接" })).toBeInTheDocument();
     expect(within(dialog).getByRole("tab", { name: "用户" })).toBeInTheDocument();
     expect(within(dialog).getByRole("tab", { name: /AI 增强/ })).toBeInTheDocument();
+    expect(within(dialog).getByRole("tab", { name: /可视化/ })).toHaveAttribute("aria-selected", "true");
+    expect(within(dialog).getByRole("tab", { name: /文本/ })).toBeInTheDocument();
     expect(dialog).not.toHaveTextContent("Generation Profile");
     expect(dialog).not.toHaveTextContent("Visual Beat");
     expect(dialog).not.toHaveTextContent("Validator");
@@ -59,6 +62,7 @@ describe("TaskEditorDialog", () => {
     await user.type(nameInput, "雨夜抵达仓库");
     await user.keyboard("{Enter}");
 
+    await user.click(screen.getByRole("tab", { name: /文本/ }));
     const prompt = screen.getByRole("textbox", { name: "用户提示词" });
     await user.clear(prompt);
     await user.type(prompt, "主角走入仓库，保持雨夜连续性。");
@@ -83,6 +87,7 @@ describe("TaskEditorDialog", () => {
         contextMode: "片段承接",
         contextDurationSeconds: 4,
         promptSource: "user",
+        userPromptViewMode: "text",
       },
     });
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -96,6 +101,31 @@ describe("TaskEditorDialog", () => {
     await user.click(screen.getByRole("tab", { name: "尾帧承接" }));
     expect(screen.getByText("使用上一任务最终帧作为本任务的起始视觉参考。")).toBeInTheDocument();
     expect(screen.queryByRole("spinbutton", { name: /承接时长/ })).not.toBeInTheDocument();
+  });
+
+  it("gives both user and AI prompts independent visual and text view modes", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    renderEditor(onSave);
+
+    expect(screen.getByRole("textbox", { name: "用户提示词可视化" })).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: /文本/ }));
+    expect(screen.getByRole("textbox", { name: "用户提示词" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: /AI 增强/ }));
+    expect(screen.getByRole("textbox", { name: "AI 增强提示词可视化" })).toBeInTheDocument();
+    expect(screen.getByText("AI 增强已启用项目背景")).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: /文本/ }));
+    expect(screen.getByRole("textbox", { name: "AI 增强提示词" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "用户" }));
+    expect(screen.getByRole("tab", { name: /文本/ })).toHaveAttribute("aria-selected", "true");
+
+    await user.click(screen.getByRole("button", { name: "保存" }));
+    expect(onSave.mock.calls[0][0].generationParams).toMatchObject({
+      userPromptViewMode: "text",
+      aiPromptViewMode: "text",
+    });
   });
 
   it("uses whichever prompt tab is selected and shows the source in the bottom action bar", async () => {
@@ -129,11 +159,12 @@ describe("TaskEditorDialog", () => {
     const task = structuredClone(mockStoryboard.tasks[0]);
     task.aiPrompt = "AI增强后的镜头提示词";
     task.finalPrompt = task.aiPrompt;
-    task.generationParams = { ...task.generationParams, promptSource: "ai", userPrompt: "用户原始提示词" };
+    task.generationParams = { ...task.generationParams, promptSource: "ai", userPrompt: "用户原始提示词", aiPromptViewMode: "text" };
     renderEditor(vi.fn(), vi.fn(), task);
 
     expect(screen.getByRole("tab", { name: /AI 增强/ })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByText("已使用AI增强提示词")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /文本/ })).toHaveAttribute("aria-selected", "true");
   });
 
   it("cancels without saving", async () => {
