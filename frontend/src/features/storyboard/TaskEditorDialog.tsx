@@ -5,7 +5,7 @@ import { Button } from "terry-react-ui-library";
 import { H3PromptEditor, type H3PromptViewMode } from "../../components/H3PromptEditor";
 import type { PromptAsset } from "../../components/PromptAssetEditor";
 import type { GenerationTask, ProjectAsset } from "../../domain/storyboard";
-import { Dialog, PortalSelect } from "../../ui/overlay";
+import { Dialog } from "../../ui/overlay";
 
 type TaskEditorPatch = Partial<Pick<GenerationTask,
   "title" | "aiPrompt" | "finalPrompt" | "generationParams" | "plannedDurationSeconds"
@@ -17,6 +17,7 @@ type TaskEditorDialogProps = {
   open: boolean;
   task?: GenerationTask;
   assets: ProjectAsset[];
+  previousTaskDurationSeconds?: number;
   projectContext?: {
     description: string;
     useDescriptionForAiPrompt: boolean;
@@ -27,6 +28,8 @@ type TaskEditorDialogProps = {
 
 type PromptMode = "user" | "ai";
 type ContextMode = "片段承接" | "尾帧承接" | "不承接";
+
+type ChoiceOption = { value: string; label: string };
 
 function assetKind(asset: ProjectAsset, role?: string): PromptAsset["kind"] {
   if (role === "character") return "subject";
@@ -83,7 +86,106 @@ function normalizeViewMode(params: Record<string, unknown>, key: string): H3Prom
   return params[key] === "text" ? "text" : "visual";
 }
 
-export function TaskEditorDialog({ open, task, assets, projectContext, onClose, onSave }: TaskEditorDialogProps) {
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function SegmentedChoice({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: ChoiceOption[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="simple-segmented-control" role="group" aria-label={label}>
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          className={value === option.value ? "is-active" : ""}
+          aria-pressed={value === option.value}
+          onClick={() => onChange(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ContinuationRange({
+  maxSeconds,
+  start,
+  end,
+  onChange,
+}: {
+  maxSeconds: number;
+  start: number;
+  end: number;
+  onChange: (start: number, end: number) => void;
+}) {
+  const max = Math.max(0, Math.floor(maxSeconds));
+  if (max < 1) {
+    return <div className="simple-context-range-empty">当前任务前没有可承接的片段。</div>;
+  }
+
+  const safeEnd = clamp(Math.round(end), 1, max);
+  const safeStart = clamp(Math.round(start), 0, safeEnd - 1);
+  const left = (safeStart / max) * 100;
+  const width = ((safeEnd - safeStart) / max) * 100;
+
+  return (
+    <div className="simple-context-range-control">
+      <div className="simple-context-range-track">
+        <span className="simple-context-range-selection" style={{ left: `${left}%`, width: `${width}%` }} />
+        <input
+          type="range"
+          min={0}
+          max={Math.max(0, max - 1)}
+          step={1}
+          value={safeStart}
+          aria-label="承接起点"
+          onChange={(event) => {
+            const nextStart = Math.min(Number(event.target.value), safeEnd - 1);
+            onChange(nextStart, safeEnd);
+          }}
+        />
+        <input
+          type="range"
+          min={Math.min(max, safeStart + 1)}
+          max={max}
+          step={1}
+          value={safeEnd}
+          aria-label="承接终点"
+          onChange={(event) => {
+            const nextEnd = Math.max(Number(event.target.value), safeStart + 1);
+            onChange(safeStart, nextEnd);
+          }}
+        />
+      </div>
+      <div className="simple-context-range-labels">
+        <span>0s</span>
+        <strong>{safeStart}s – {safeEnd}s · {safeEnd - safeStart}s</strong>
+        <span>{max}s</span>
+      </div>
+    </div>
+  );
+}
+
+export function TaskEditorDialog({
+  open,
+  task,
+  assets,
+  previousTaskDurationSeconds = 0,
+  projectContext,
+  onClose,
+  onSave,
+}: TaskEditorDialogProps) {
   const [promptMode, setPromptMode] = useState<PromptMode>("user");
   const [userViewMode, setUserViewMode] = useState<H3PromptViewMode>("visual");
   const [aiViewMode, setAiViewMode] = useState<H3PromptViewMode>("visual");
@@ -96,7 +198,8 @@ export function TaskEditorDialog({ open, task, assets, projectContext, onClose, 
   const [quality, setQuality] = useState("标准");
   const [generationMode, setGenerationMode] = useState("全能参考");
   const [contextMode, setContextMode] = useState<ContextMode>("片段承接");
-  const [contextDurationSeconds, setContextDurationSeconds] = useState(3);
+  const [contextStartSeconds, setContextStartSeconds] = useState(0);
+  const [contextEndSeconds, setContextEndSeconds] = useState(0);
 
   useEffect(() => {
     if (!open || !task) return;
@@ -106,6 +209,16 @@ export function TaskEditorDialog({ open, task, assets, projectContext, onClose, 
     const initialUserPrompt = storedUserPrompt || (initialPromptMode === "user"
       ? task.finalPrompt || task.userIntent || task.summary || ""
       : task.userIntent || task.summary || "");
+    const previousDuration = Math.max(0, Math.floor(previousTaskDurationSeconds));
+    const legacyContextDuration = Math.max(1, numberParam(params, "contextDurationSeconds", 1));
+    const defaultEnd = previousDuration;
+    const defaultStart = Math.max(0, defaultEnd - Math.min(legacyContextDuration, Math.max(1, previousDuration)));
+    const storedEnd = previousDuration > 0
+      ? clamp(numberParam(params, "contextEndSeconds", defaultEnd), 1, previousDuration)
+      : 0;
+    const storedStart = storedEnd > 0
+      ? clamp(numberParam(params, "contextStartSeconds", defaultStart), 0, storedEnd - 1)
+      : 0;
 
     setPromptMode(initialPromptMode);
     setUserViewMode(normalizeViewMode(params, "userPromptViewMode"));
@@ -119,13 +232,15 @@ export function TaskEditorDialog({ open, task, assets, projectContext, onClose, 
     setQuality(stringParam(params, "quality", "标准"));
     setGenerationMode(stringParam(params, "generationMode", "全能参考"));
     setContextMode(normalizeContextMode(stringParam(params, "contextMode", "片段承接")));
-    setContextDurationSeconds(Math.max(1, numberParam(params, "contextDurationSeconds", 3)));
-  }, [open, task]);
+    setContextStartSeconds(storedStart);
+    setContextEndSeconds(storedEnd);
+  }, [open, previousTaskDurationSeconds, task]);
 
   const promptAssets = useMemo(() => promptAssetsForTask(task, assets), [assets, task]);
   if (!task) return null;
 
-  const maxContextDuration = Math.max(1, Math.min(15, duration));
+  const previousDuration = Math.max(0, Math.floor(previousTaskDurationSeconds));
+  const contextDurationSeconds = previousDuration > 0 ? Math.max(1, contextEndSeconds - contextStartSeconds) : 0;
   const activePrompt = promptMode === "ai" ? aiPrompt : userPrompt;
   const activeViewMode = promptMode === "ai" ? aiViewMode : userViewMode;
   const setActiveViewMode = promptMode === "ai" ? setAiViewMode : setUserViewMode;
@@ -142,7 +257,9 @@ export function TaskEditorDialog({ open, task, assets, projectContext, onClose, 
         quality,
         generationMode,
         contextMode,
-        contextDurationSeconds: Math.min(contextDurationSeconds, maxContextDuration),
+        contextDurationSeconds,
+        contextStartSeconds,
+        contextEndSeconds,
         promptSource: promptMode,
         userPrompt,
         userPromptViewMode,
@@ -195,10 +312,10 @@ export function TaskEditorDialog({ open, task, assets, projectContext, onClose, 
             <h3>生成参数</h3>
             <label>
               <span>分辨率</span>
-              <PortalSelect
+              <SegmentedChoice
+                label="分辨率"
                 value={resolution}
                 onChange={setResolution}
-                ariaLabel="分辨率"
                 options={[
                   { value: "720p", label: "720P" },
                   { value: "1080p", label: "1080P" },
@@ -208,10 +325,10 @@ export function TaskEditorDialog({ open, task, assets, projectContext, onClose, 
             </label>
             <label>
               <span>质量</span>
-              <PortalSelect
+              <SegmentedChoice
+                label="质量档位"
                 value={quality}
                 onChange={setQuality}
-                ariaLabel="质量档位"
                 options={[
                   { value: "快速", label: "快速" },
                   { value: "标准", label: "标准" },
@@ -219,21 +336,29 @@ export function TaskEditorDialog({ open, task, assets, projectContext, onClose, 
                 ]}
               />
             </label>
-            <label className="simple-duration-input">
-              <span>总秒数</span>
-              <div><input type="number" min={1} max={60} value={duration} onChange={(event) => setDuration(Math.max(1, Number(event.target.value) || 1))} /><em>秒</em></div>
+            <label className="simple-slider-field">
+              <span>总秒数 <strong>{duration} 秒</strong></span>
+              <input
+                type="range"
+                min={1}
+                max={60}
+                step={1}
+                value={duration}
+                aria-label="总秒数"
+                onChange={(event) => setDuration(Number(event.target.value))}
+              />
             </label>
           </section>
 
           <section>
             <h3>生成模式</h3>
-            <PortalSelect
+            <SegmentedChoice
+              label="生成模式"
               value={generationMode}
               onChange={setGenerationMode}
-              ariaLabel="生成模式"
               options={[
-                { value: "全能参考", label: "全能参考", detail: "角色、场景与参考素材共同参与" },
-                { value: "首尾帧", label: "首尾帧", detail: "重点约束开头和结尾画面" },
+                { value: "全能参考", label: "全能参考" },
+                { value: "首尾帧", label: "首尾帧" },
               ]}
             />
           </section>
@@ -256,21 +381,18 @@ export function TaskEditorDialog({ open, task, assets, projectContext, onClose, 
             </div>
 
             {contextMode === "片段承接" && (
-              <div className="simple-context-params">
-                <label className="simple-duration-input">
-                  <span>承接时长</span>
-                  <div>
-                    <input
-                      type="number"
-                      min={1}
-                      max={maxContextDuration}
-                      value={contextDurationSeconds}
-                      onChange={(event) => setContextDurationSeconds(Math.min(maxContextDuration, Math.max(1, Number(event.target.value) || 1)))}
-                    />
-                    <em>秒</em>
-                  </div>
-                </label>
-                <small>从上一任务末尾取一段画面与运动信息作为连续性参考。</small>
+              <div className="simple-context-params simple-context-interval">
+                <span className="simple-context-param-label">承接区间</span>
+                <ContinuationRange
+                  maxSeconds={previousDuration}
+                  start={contextStartSeconds}
+                  end={contextEndSeconds}
+                  onChange={(start, end) => {
+                    setContextStartSeconds(start);
+                    setContextEndSeconds(end);
+                  }}
+                />
+                <small>区间来自上一任务；新任务默认选择上一任务末尾 1 秒，可拖动两端调整。</small>
               </div>
             )}
 
