@@ -35,7 +35,12 @@ describe("TaskEditorDialog", () => {
     const dialog = screen.getByRole("dialog", { name: /抵达仓库并发现门内异常/ });
     expect(within(dialog).getByTitle("编辑任务名称")).toBeInTheDocument();
     expect(within(dialog).getByText("任务编号 T01-001")).toBeInTheDocument();
-    expect(within(dialog).getByRole("group", { name: "分辨率" })).toBeInTheDocument();
+    const resolution = within(dialog).getByRole("group", { name: "分辨率" });
+    expect(resolution).toBeInTheDocument();
+    expect(within(resolution).getByRole("button", { name: "480P" })).toBeInTheDocument();
+    expect(within(resolution).getByRole("button", { name: "720P" })).toBeInTheDocument();
+    expect(within(resolution).getByRole("button", { name: "1080P" })).toBeInTheDocument();
+    expect(within(resolution).queryByRole("button", { name: "2K" })).not.toBeInTheDocument();
     expect(within(dialog).getByRole("group", { name: "质量档位" })).toBeInTheDocument();
     expect(within(dialog).getByRole("group", { name: "生成模式" })).toBeInTheDocument();
     expect(within(dialog).getByRole("slider", { name: "总秒数" })).toBeInTheDocument();
