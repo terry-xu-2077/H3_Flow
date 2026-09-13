@@ -4,8 +4,9 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 
 ## 当前优先文档
 
-- **AI 增强最新 UI：`docs/UI_V0.8_AI_PROMPT_ENHANCEMENT.md`**
-- **AI 增强后端适配：`docs/V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md`**
+- **AI 提示词增强专项架构：`docs/AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`**
+- AI 增强 UI：`docs/UI_V0.8_AI_PROMPT_ENHANCEMENT.md`
+- AI 增强 V0.8 后端迁移：`docs/V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md`
 - 项目配置 / H3 Prompt 基线：`docs/UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md`
 - V0.6 后端增量：`docs/V0.6_BACKEND_DELTA.md`
 - 当前产品 UI 基线：`docs/UI_V0.5_PROJECT_WORKSPACE.md`
@@ -18,7 +19,7 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 - 测试与故障注入：`docs/TEST_STRATEGY.md`
 - 文档索引与冲突优先级：`docs/README.md`
 
-涉及 AI 增强、AI 历史版本、上一任务上下文时，必须先读 V0.8 两份文档。旧文档里的“故事板 / 生成 / 素材”三个一级页面已被当前 UI 覆盖，不得恢复。
+涉及 AI 提示词增强实现、媒体输入、上一任务摘要、项目背景、Prompt Skill 或 Prompt AI Provider 时，必须优先读取 `AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`。旧文档里的“故事板 / 生成 / 素材”三个一级页面已被当前 UI 覆盖，不得恢复。
 
 ## 目录职责
 
@@ -69,14 +70,27 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 - 不得通过缩小字号、大量 Badge / Pill、密集 key-value 来容纳更多参数。
 - 用户可见文案默认中文，产品名 / 模型名 / 外部协议标签除外。
 
+## AI 提示词增强不变量
+
+- AI Prompt Enhancement 的核心输入是 **用户描述 + 当前任务真正引用的图片 / 视频媒体**。
+- `assetId / 资产名 / <Picture 1>` 等元数据不能代替真实媒体本体。
+- 前端只传稳定 `assetId + role + context options`；绝对路径、base64、上传、`image_url / video_url`、视频抽帧属于后端 Prompt AI Provider Adapter。
+- 项目背景是可选上下文，受项目开关控制。
+- **上一任务摘要也是可选上下文，不得默认强制发送。** `includePreviousTaskSummary=false` 时增强请求不得携带摘要正文。
+- 即使启用上一任务摘要，也不得默认发送上一任务完整 `userPrompt / aiPrompt / finalPrompt`。
+- Prompt Enhancement Context 与 Video Generation Context 必须独立。
+- MiniMax H3 与 Seedance 2.0 必须使用不同 Prompt Skill；可以共用底层 Prompt AI Provider，但不能共用一套混杂的 System Prompt。
+- Prompt AI Provider 的图片、原生视频、视频抽帧、音频理解等能力必须由 Capability 表达。
+- 音频 Provider 不支持真实理解时，不得声称已听取或分析音频。
+- 每次增强产生独立 `AiPromptRevision`；失败请求不产生伪历史。
+- 只发送当前任务真正选中的媒体和用户明确启用的可选上下文，不因资产存在于项目库就自动上传给 AI。
+
 ## 后端接入不变量
 
 - React 页面不得直接围绕 Core 对象或数据库表拼 UI；使用 Frontend Adapter / Read Model。
 - 首页消费 `ProjectSummary`，项目页消费 `ProjectWorkspaceView / TaskSummary`，编辑窗消费 `TaskEditorView`。
 - Project status、Task status、resultCount、preview fallback 等聚合逻辑放在后端 Adapter，不让前端理解 Job / Result / Context 细节。
-- 项目简介只在 `useDescriptionForAiPrompt=true` 时作为 Prompt Enhancer 项目级 Context；不得直接拼进用户 Prompt。
-- **AI 增强的上一任务上下文默认只使用摘要型文本：summary → 简短 userIntent → title。不得默认发送上一任务完整 userPrompt / aiPrompt / finalPrompt。**
-- AI Prompt Enhancement 每次调用产生独立 revision；失败调用不产生伪历史。
+- 项目简介不得直接拼进用户 Prompt。
 - H3 可视化 HTML / Chip DOM 不得入库，后端只存标准 H3 文本。
 - Prompt Source 必须明确保存为 user / ai；两份 Prompt 独立保存。
 - `userViewMode / aiViewMode` 是 UI 偏好，不属于真实 Video Provider 参数；真实后端接入时应从 generationParams 中拆出。
@@ -88,7 +102,8 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 ## 开发与验收
 
 - UI 修改必须先阅读当前相关的 V0.8 / V0.6 / V0.5 UI 文档和 `UI_DIRECTOR_MODE_GUIDE.md`。
-- 后端接 UI 必须阅读 `V0.5_BACKEND_FRONTEND_ADAPTER.md`、`V0.6_BACKEND_DELTA.md` 与 `V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md`。
+- AI 提示词增强实现必须先阅读 `AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`。
+- 后端接 UI 必须阅读 `V0.5_BACKEND_FRONTEND_ADAPTER.md`、`V0.6_BACKEND_DELTA.md` 与相关版本增量。
 - Storyboard / Task 领域变更必须阅读 `STORYBOARD_TASK_MODEL.md`。
 - 测试修改必须阅读 `TEST_STRATEGY.md`。
 - 修改业务逻辑必须增加测试；修复 Bug 必须先增加可复现回归测试。
