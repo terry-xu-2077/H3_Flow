@@ -29,7 +29,7 @@ describe("TaskEditorDialog", () => {
   it("keeps the editor focused on compact task configuration and prompt editing", () => {
     renderEditor();
 
-    const dialog = screen.getByRole("dialog", { name: /编辑分镜/ });
+    const dialog = screen.getByRole("dialog", { name: /编辑任务/ });
     expect(within(dialog).getByText("任务配置")).toBeInTheDocument();
     expect(within(dialog).getByText("生成参数")).toBeInTheDocument();
     expect(within(dialog).getByText("生成模式")).toBeInTheDocument();
