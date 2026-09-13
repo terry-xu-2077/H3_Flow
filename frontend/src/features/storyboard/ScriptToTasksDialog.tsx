@@ -15,6 +15,10 @@ const sampleScript = `雨声渐密。林澜停在仓库门前，收起雨伞，�
 
 门后的放映机自行启动。灰尘中的光束亮起，墙面出现不属于这个年代的旧影像。`;
 
+function sceneLabel(number: string) {
+  return number.replace(/^Scene\s*/i, "场景 ");
+}
+
 type ScriptToTasksDialogProps = {
   open: boolean;
   scenes: Scene[];
@@ -123,7 +127,7 @@ export function ScriptToTasksDialog({ open, scenes, defaultSceneId, onClose, onA
             <article key={proposal.tempId} aria-label={`分镜建议 ${index + 1}`}>
               <header>
                 <span>{String(index + 1).padStart(2, "0")}</span>
-                <strong>{proposal.plannedDurationSeconds}s</strong>
+                <strong>{proposal.plannedDurationSeconds} 秒</strong>
                 {proposal.visualBeats.length > 1 && <em>{proposal.visualBeats.length} 个内部镜头</em>}
                 <button type="button" aria-label={`上移分镜建议 ${index + 1}`} onClick={() => moveProposal(index, -1)} disabled={index === 0}><ArrowUp size={13} /></button>
                 <button type="button" aria-label={`下移分镜建议 ${index + 1}`} onClick={() => moveProposal(index, 1)} disabled={index === proposals.length - 1}><ArrowDown size={13} /></button>
@@ -152,7 +156,7 @@ export function ScriptToTasksDialog({ open, scenes, defaultSceneId, onClose, onA
                     value={proposal.targetSceneId}
                     onChange={(targetSceneId) => updateProposal(proposal.tempId, { targetSceneId })}
                     ariaLabel={`分镜建议 ${index + 1} 目标场景`}
-                    options={scenes.map((scene) => ({ value: scene.id, label: `${scene.number} · ${scene.title}` }))}
+                    options={scenes.map((scene) => ({ value: scene.id, label: `${sceneLabel(scene.number)} · ${scene.title}` }))}
                   />
                 </label>
               </div>
