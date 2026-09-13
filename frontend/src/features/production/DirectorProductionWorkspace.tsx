@@ -22,7 +22,7 @@ export function DirectorProductionWorkspace({ snapshot }: { snapshot: Storyboard
     <section className="director-production" aria-label="生成队列">
       <header className="director-production-head">
         <div>
-          <span className="director-kicker">PRODUCTION</span>
+          <span className="director-kicker">生成队列</span>
           <h1>生成</h1>
           <p>这里只看进度和异常。分镜内容请回到故事板编辑。</p>
         </div>
