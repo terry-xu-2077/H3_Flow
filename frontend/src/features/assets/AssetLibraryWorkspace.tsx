@@ -42,7 +42,7 @@ export function AssetLibraryWorkspace({ assets }: { assets: ProjectAsset[] }) {
   return (
     <section className="asset-library-workspace" aria-label="素材库">
       <header>
-        <div><span className="eyebrow">PROJECT MEDIA</span><h1>素材</h1><p>集中整理角色、场景、道具和参考素材。</p></div>
+        <div><span className="eyebrow">项目素材</span><h1>素材</h1><p>集中整理角色、场景、道具和参考素材。</p></div>
         <strong>{filtered.length} / {assets.length}</strong>
       </header>
       <div className="asset-library-filters">
@@ -79,8 +79,8 @@ export function AssetLibraryWorkspace({ assets }: { assets: ProjectAsset[] }) {
             </button>
             {technicalOpen && (
               <div className="asset-technical-info" aria-label="素材技术信息">
-                <p>{preview.projectRelativePath}</p>
-                <code>asset_id: {preview.id}</code>
+                <p><strong>项目路径：</strong>{preview.projectRelativePath}</p>
+                <code>素材 ID：{preview.id}</code>
               </div>
             )}
           </>}

@@ -46,7 +46,7 @@ describe("ScriptToTasksDialog", () => {
     expect((within(screen.getByRole("article", { name: "分镜建议 1" })).getByText("分镜标题").parentElement!.querySelector("input") as HTMLInputElement).value).toBe(originalSecondTitle);
 
     await user.click(screen.getByRole("button", { name: "分镜建议 1 目标场景" }));
-    await user.click(screen.getByRole("option", { name: /Scene 02 · 仓库大厅/ }));
+    await user.click(screen.getByRole("option", { name: /场景 02 · 仓库大厅/ }));
     await user.click(within(screen.getByRole("article", { name: "分镜建议 2" })).getByRole("button", { name: "删除" }));
     await user.click(screen.getByRole("button", { name: /创建全部 1 个分镜/ }));
 
