@@ -4,22 +4,28 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
 
 ## 当前必须优先阅读
 
+- [V0.6 项目配置与 H3 提示词编辑规范](./UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md)  
+  **当前涉及项目工作台顶部、项目配置、结果播放和提示词编辑的最高优先级文档。** 定义返回首页、项目配置、卡片/列表共用工具栏、Result 播放，以及用户/AI 提示词各自的可视化/文本模式。
+
+- [V0.6 后端适配增量](./V0.6_BACKEND_DELTA.md)  
+  **V0.5 Frontend Adapter 的最新增量。** 定义项目简介、AI 项目背景开关、项目资产 CRUD、Task Prompt Source、H3 编辑器偏好和 Result 播放数据。
+
 - [V0.5 Terry导演工作台 UI 基线](./UI_V0.5_PROJECT_WORKSPACE.md)  
-  **当前默认产品 UI 的最高优先级文档。** 定义项目首页、项目工作台、列表 / 卡片双视图、右侧只读栏、底部状态栏、任务编辑弹窗以及“列表模式必须有新建任务按钮”等规则。
+  定义项目首页、项目工作台、列表 / 卡片双视图、右侧只读栏、底部状态栏和任务编辑弹窗的总体结构。未被 V0.6 覆盖的规则继续有效。
 
 - [V0.5 任务编辑窗细化规范](./UI_V0.5_TASK_EDITOR_REFINEMENT.md)  
-  **任务编辑弹窗的最新细化规则。** 定义“任务图标 + 可编辑任务名”、片段承接 / 尾帧承接 / 不承接选项卡、承接时长、提示词底栏稳定规则，以及全应用下拉菜单必须匹配触发控件宽度。涉及任务编辑窗或 `PortalSelect` 时优先于 V0.5 主文档中的旧描述。
+  定义“任务图标 + 可编辑任务名”、片段承接 / 尾帧承接 / 不承接选项卡、承接时长，以及全应用下拉菜单必须匹配触发控件宽度。其提示词显示部分以 V0.6 为准。
 
 - [V0.5 后端适配新前端方案](./V0.5_BACKEND_FRONTEND_ADAPTER.md)  
-  **真实后端接入 V0.5 前端的契约。** 定义 ProjectSummary、ProjectWorkspaceView、TaskSummary、TaskEditorView、Runtime、推荐 API、SSE、Frontend Adapter / Gateway 和实施顺序。
+  后端 Frontend Adapter 基线。ProjectSummary、ProjectWorkspaceView、TaskSummary、TaskEditorView、Runtime、推荐 API、SSE 和 Gateway 仍然有效；新增字段以 V0.6 增量为准。
 
 - [Director Mode UI 开发规范](./UI_DIRECTOR_MODE_GUIDE.md)  
-  保留 V0.4 已确认的“查看与编辑分离、右侧只读、任务编辑使用悬浮窗、防参数墙、全中文”等规则。其旧“故事板 / 生成 / 素材”一级导航部分已被 V0.5 文档覆盖。
+  保留“查看与编辑分离、右侧只读、任务编辑使用悬浮窗、防参数墙、全中文”等通用规则。
 
 ## 领域与架构文档
 
 - [Storyboard-style Task Workspace 数据模型](./STORYBOARD_TASK_MODEL.md)  
-  核心领域模型。`GenerationTask`、Story Order、Context、Job、Result 等内部关系仍然有效，即使 V0.5 UI 不直接展示这些概念。
+  核心领域模型。`GenerationTask`、Story Order、Context、Job、Result 等内部关系仍然有效，即使当前 UI 不直接展示这些概念。
 
 - [产品与架构规划](./ShotMill_产品与架构规划.md)  
   产品边界、Provider 架构、Task / Job / Result、Context、Queue、Remote Monitor、整体技术方向。
@@ -33,7 +39,7 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
 ## 历史版本文档
 
 - [V0.2 Storyboard-style Task Workspace 开发任务](./V0.2_STORYBOARD_DEVELOPMENT_TASKS.md)  
-  已完成能力与领域回归基线。旧三栏 / Storyboard 默认界面不得覆盖 V0.5 最新 UI 决策。
+  已完成能力与领域回归基线。旧三栏 / Storyboard 默认界面不得覆盖当前 UI 决策。
 
 - [V0.1 第一版开发任务](./V0.1_DEVELOPMENT_TASKS.md)  
   第一版基础工程与总体 Phase，仅保留未被后续版本覆盖的内容。
@@ -45,18 +51,23 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
 
 # 当前 UI 心智
 
-V0.5 默认产品结构固定为：
+默认产品结构固定为：
 
 ```text
 项目首页
   ↓ 选择 / 新建项目
 项目工作台
+  ├─ 返回首页
+  ├─ 项目配置
   ├─ 列表模式
   ├─ 卡片模式
-  ├─ 右侧只读信息栏
+  ├─ 共用新建任务工具栏
+  ├─ 右侧只读信息 / Result 预览
   └─ 底部运行状态
        ↓ 双击 / 右键 / 新建任务
 任务编辑弹窗
+       ├─ 用户 / AI增强提示词来源
+       └─ 可视化 / 文本显示模式
 ```
 
 不再使用：
@@ -87,7 +98,9 @@ Domain Contract
    ↓
 UI_V0.5_PROJECT_WORKSPACE
    ↓
-UI_V0.5_TASK_EDITOR_REFINEMENT（涉及任务编辑 / 下拉控件时）
+UI_V0.6_PROJECT_CONFIG_H3_EDITOR（涉及工作台顶部 / 项目配置 / Prompt / Result 时）
+   ↓
+UI_V0.5_TASK_EDITOR_REFINEMENT（涉及任务配置 / Context / 下拉控件时）
    ↓
 UI_DIRECTOR_MODE_GUIDE 中未冲突的防参数墙 / 查看编辑分离规则
    ↓
@@ -99,7 +112,7 @@ UI_UX_SPEC
    ↓
 回归测试
    ↓
-按 V0.5_BACKEND_FRONTEND_ADAPTER 接真实后端
+V0.5 Backend Adapter + V0.6 Backend Delta 接真实后端
 ```
 
 基础 UI 尚未稳定前，不应把真实 Provider / Queue / 数据库逻辑直接绑进 React 组件。
@@ -111,14 +124,15 @@ UI_UX_SPEC
 发生冲突时：
 
 1. 明确的新需求 / 最新决策；
-2. **`UI_V0.5_PROJECT_WORKSPACE.md`：当前默认产品页面结构与交互；**
-3. **`UI_V0.5_TASK_EDITOR_REFINEMENT.md`：任务编辑窗与通用下拉控件的最新细化；**
-4. `V0.5_BACKEND_FRONTEND_ADAPTER.md`：新前端与后端的边界；
-5. `UI_DIRECTOR_MODE_GUIDE.md`：查看/编辑分离、防参数墙、用户术语等未冲突规则；
-6. `STORYBOARD_TASK_MODEL.md`：领域关系；
-7. `UI_UX_SPEC.md`：通用 UI 行为；
-8. `TEST_STRATEGY.md`：测试与验收；
-9. `ShotMill_产品与架构规划.md`：其他核心架构；
-10. V0.2 / V0.1：历史能力基线。
+2. **`UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md`：项目工作台顶部、项目配置、Prompt 与 Result 的最新规则；**
+3. `UI_V0.5_PROJECT_WORKSPACE.md`：总体页面结构与交互；
+4. `UI_V0.5_TASK_EDITOR_REFINEMENT.md`：任务配置、Context、下拉控件细化；
+5. `V0.6_BACKEND_DELTA.md` + `V0.5_BACKEND_FRONTEND_ADAPTER.md`：前后端边界；
+6. `UI_DIRECTOR_MODE_GUIDE.md`：查看/编辑分离、防参数墙、用户术语等未冲突规则；
+7. `STORYBOARD_TASK_MODEL.md`：领域关系；
+8. `UI_UX_SPEC.md`：通用 UI 行为；
+9. `TEST_STRATEGY.md`：测试与验收；
+10. `ShotMill_产品与架构规划.md`：其他核心架构；
+11. V0.2 / V0.1：历史能力基线。
 
 根目录 `AGENTS.md` 保持为轻量开发导航。
