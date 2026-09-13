@@ -72,6 +72,7 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
   const [editingTitle, setEditingTitle] = useState(false);
   const [userPrompt, setUserPrompt] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
+  const [usingAiEnhancedPrompt, setUsingAiEnhancedPrompt] = useState(false);
   const [duration, setDuration] = useState(6);
   const [resolution, setResolution] = useState("1080p");
   const [quality, setQuality] = useState("标准");
@@ -82,11 +83,14 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
   useEffect(() => {
     if (!open || !task) return;
     const params = task.generationParams ?? {};
+    const initialUserPrompt = task.finalPrompt || task.userIntent || task.summary || "";
+    const initialAiPrompt = task.aiPrompt || "";
     setPromptMode("user");
     setTaskTitle(task.title);
     setEditingTitle(false);
-    setUserPrompt(task.finalPrompt || task.userIntent || task.summary || "");
-    setAiPrompt(task.aiPrompt || "");
+    setUserPrompt(initialUserPrompt);
+    setAiPrompt(initialAiPrompt);
+    setUsingAiEnhancedPrompt(Boolean(initialAiPrompt.trim()) && initialUserPrompt === initialAiPrompt);
     setDuration(task.plannedDurationSeconds || 6);
     setResolution(stringParam(params, "resolution", "1080p"));
     setQuality(stringParam(params, "quality", "标准"));
@@ -121,7 +125,7 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
   const useAiPrompt = () => {
     if (!aiPrompt.trim()) return;
     setUserPrompt(aiPrompt);
-    setPromptMode("user");
+    setUsingAiEnhancedPrompt(true);
   };
 
   const titleNode = (
@@ -269,7 +273,10 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
             <div className="simple-prompt-body">
               <PromptAssetEditor
                 value={userPrompt}
-                onChange={setUserPrompt}
+                onChange={(value) => {
+                  setUserPrompt(value);
+                  setUsingAiEnhancedPrompt(false);
+                }}
                 assets={promptAssets}
                 ariaLabel="用户提示词"
                 rows={18}
@@ -277,10 +284,16 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
             </div>
           ) : (
             <div className="simple-prompt-body simple-ai-prompt">
-              <div className="simple-ai-action">
-                <Button onClick={useAiPrompt} disabled={!aiPrompt.trim()}>采用增强结果</Button>
-              </div>
-              <textarea value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} aria-label="AI 增强提示词" rows={18} placeholder="AI 增强结果会显示在这里。" />
+              <textarea
+                value={aiPrompt}
+                onChange={(event) => {
+                  setAiPrompt(event.target.value);
+                  setUsingAiEnhancedPrompt(false);
+                }}
+                aria-label="AI 增强提示词"
+                rows={18}
+                placeholder="AI 增强结果会显示在这里。"
+              />
             </div>
           )}
 
@@ -290,8 +303,16 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
         </section>
 
         <footer className="simple-task-editor-actions">
-          <Button onClick={onClose}>取消</Button>
-          <Button variant="accent" onClick={save}>保存</Button>
+          <div className="simple-task-prompt-source">
+            {promptMode === "ai" && (
+              <Button onClick={useAiPrompt} disabled={!aiPrompt.trim() || usingAiEnhancedPrompt}>采用增强结果</Button>
+            )}
+            <span>{usingAiEnhancedPrompt ? "已使用AI增强提示词" : "当前使用：用户提示词"}</span>
+          </div>
+          <div className="simple-task-editor-action-buttons">
+            <Button onClick={onClose}>取消</Button>
+            <Button variant="accent" onClick={save}>保存</Button>
+          </div>
         </footer>
       </div>
     </Dialog>
