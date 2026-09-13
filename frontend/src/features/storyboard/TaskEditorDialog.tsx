@@ -141,7 +141,7 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
           }}
         />
       ) : (
-        <button type="button" className="task-dialog-title-edit" onClick={() => setEditingTitle(true)} aria-label="编辑任务名称">
+        <button type="button" className="task-dialog-title-edit" title="编辑任务名称" onClick={() => setEditingTitle(true)}>
           <span>{taskTitle || task.title}</span>
           <Pencil size={14} aria-hidden="true" />
         </button>
