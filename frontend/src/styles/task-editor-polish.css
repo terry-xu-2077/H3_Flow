@@ -128,7 +128,6 @@
   min-height: 46px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   padding: 8px 14px;
   border-top: 1px solid var(--sm-border);
@@ -143,7 +142,6 @@
 }
 
 .simple-ai-prompt {
-  position: relative;
   display: block;
 }
 
@@ -151,11 +149,31 @@
   height: 100%;
 }
 
-.simple-ai-action {
-  position: absolute;
-  z-index: 2;
-  top: 10px;
-  right: 10px;
+.simple-task-editor-actions {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.simple-task-prompt-source {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+  color: var(--sm-text-muted);
+  font-size: 10px;
+}
+
+.simple-task-prompt-source span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.simple-task-editor-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .sm-select-menu {
@@ -194,4 +212,6 @@
   .simple-context-tabs { grid-template-columns: 1fr; }
   .simple-context-tabs button { text-align: left; padding-inline: 8px; }
   .simple-prompt-footer { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .simple-task-editor-actions { align-items: stretch; flex-direction: column; }
+  .simple-task-editor-action-buttons { justify-content: flex-end; }
 }
