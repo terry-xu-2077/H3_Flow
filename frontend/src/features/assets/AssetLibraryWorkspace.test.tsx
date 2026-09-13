@@ -15,11 +15,11 @@ describe("AssetLibraryWorkspace", () => {
     await user.click(screen.getByRole("button", { name: /雨声与远处汽笛/ }));
 
     const detail = screen.getByRole("complementary", { name: "素材详情" });
-    expect(detail).not.toHaveTextContent("asset_id: asset-rain-audio");
+    expect(detail).not.toHaveTextContent("素材 ID：asset-rain-audio");
     expect(detail).not.toHaveTextContent("assets/audio/harbor-rain.wav");
 
     await user.click(screen.getByRole("button", { name: "技术信息" }));
-    expect(detail).toHaveTextContent("asset_id: asset-rain-audio");
+    expect(detail).toHaveTextContent("素材 ID：asset-rain-audio");
     expect(detail).toHaveTextContent("assets/audio/harbor-rain.wav");
   });
 });
