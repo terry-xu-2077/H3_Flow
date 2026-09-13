@@ -1,46 +1,57 @@
 # ShotMill
 
-ShotMill 是面向 AI 视频生产的素材生成工作台。V0.1 当前从工程基础设施和 `/dev/ui` Mock 工作区开始开发。
+ShotMill 是面向 AI 视频生产的素材生成工作台。当前后端进入 V0.3 Backend Foundation 阶段，桌面开发入口已经统一为一键启动。
 
 ## 开发环境
 
 - Node.js 20+
 - pnpm 10+
 - Python 3.11+
-- Rust stable（构建 Tauri 桌面壳时需要）
+- Rust stable（Tauri 桌面壳需要；一键启动器在 Windows 上可自动安装 Rust）
 
-## 首次安装
+## 一键启动（推荐）
 
-```powershell
-python -m pip install -e ".[dev]"
-pnpm --dir frontend install
-```
+Windows 日常开发直接双击根目录的 `启动项目.bat`。`Start-UI.bat` 和 `启动 ShotMill UI.bat` 是兼容别名，都会进入同一套完整开发启动流程。
 
-## 启动
+启动器会自动完成：
 
-日常打磨 UI 时，直接双击根目录的 `启动项目.bat`。该入口参考 Rulesmd_editor：BAT 调用系统默认 PowerShell 执行 `scripts/start-dev.ps1`，自动检查前端与 Rust 环境并启动 Tauri 桌面开发窗口。`Start-UI.bat` 和 `启动 ShotMill UI.bat` 是兼容别名。
+- 检查 Node.js、pnpm、Python 3.11+ 与 Rust/Cargo；缺少 Rust 时自动安装 stable toolchain。
+- 创建或修复项目根目录 `.venv`。
+- 仅在 `pyproject.toml` 发生变化时安装/更新 Python 后端与开发依赖。
+- 仅在 `frontend/package.json` 或 `pnpm-lock.yaml` 发生变化时安装/更新前端依赖。
+- 检测本机 `127.0.0.1:7897` 开发代理；依赖直连失败时自动通过该代理重试。
+- 检查 `8765`：若已经是 ShotMill 后端则复用；若被其他程序占用则明确报错。
+- 自动在一个标题为 `ShotMill Backend` 的可见控制台中启动 FastAPI，并等待 `/health` 真正就绪。
+- 检查 `1420`：若已经是 ShotMill Vite 前端则复用，避免重复启动；若属于其他程序则报错。
+- Tauri 窗口关闭时，会结束本次启动器创建的后端控制台及其 Uvicorn 进程树。
+- 后端控制台还会监视主启动器 PID；即使主启动器被直接关闭，也会自动清理自己的后端进程树。
+- 如果启动前 `8765` 已经有一个健康的 ShotMill 后端，启动器只复用它，不会在退出时结束用户原本运行的后端。
 
-如果 `1420` 已经运行本项目的 ShotMill 前端，启动器会直接复用它并跳过第二次 Vite 启动；如果端口属于其他程序，则会显示明确的占用提示，不会结束无关进程。
+开发地址：
 
-也可以从 PowerShell 启动：
+- 后端 API：`http://127.0.0.1:8765`
+- 健康检查：`http://127.0.0.1:8765/health`
+- 前端开发服务：`http://127.0.0.1:1420/dev/ui`
+- 后端生命周期日志：`.shotmill/logs/backend-lifecycle.log`
 
-启动浏览器 UI（自动打开 `/dev/ui`，支持热更新）：
+首次启动可能需要下载 Python、前端与 Rust 依赖；之后会通过依赖指纹跳过不必要的重复安装。
+
+## 其他启动方式
+
+浏览器 UI 调试仍可单独运行：
 
 ```powershell
 & .\Start-UI.ps1
 ```
 
-需要在 Tauri 桌面壳中打磨时：
+该脚本只负责浏览器 UI。需要完整前后端联调时优先使用 `启动项目.bat`。
 
-```powershell
-& .\scripts\start-dev.ps1
-```
-
-也可以分别手动启动：
+也可以分别手动启动。
 
 后端：
 
 ```powershell
+python -m pip install -e ".[dev]"
 python -m uvicorn shotmill.app:app --app-dir backend --host 127.0.0.1 --port 8765 --reload
 ```
 
@@ -50,12 +61,18 @@ python -m uvicorn shotmill.app:app --app-dir backend --host 127.0.0.1 --port 876
 pnpm --dir frontend dev
 ```
 
-浏览器打开 `http://127.0.0.1:1420/dev/ui` 可进入不依赖真实 Provider 的 UI 开发模式。
-
 桌面壳：
 
 ```powershell
 pnpm --dir frontend tauri dev
+```
+
+## 启动器预检
+
+只检查环境和端口，不安装依赖、不启动程序：
+
+```powershell
+& .\scripts\start-dev.ps1 -CheckOnly
 ```
 
 ## 验收
