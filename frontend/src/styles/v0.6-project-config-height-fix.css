@@ -14,4 +14,10 @@
     height: calc(100vh - 36px);
     max-height: calc(100vh - 36px);
   }
+  .workspace-project-config-button {
+    width: auto;
+    min-width: 94px;
+    padding: 0 11px;
+  }
+  .workspace-project-config-button > span { display: inline; }
 }
