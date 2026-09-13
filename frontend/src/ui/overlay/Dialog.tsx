@@ -41,7 +41,6 @@ export function Dialog({ open, title, description, children, onClose, size = "de
           >
             <header>
               <div>
-                <span className="eyebrow">OVERLAY SYSTEM</span>
                 <h2 id={titleId}>{title}</h2>
                 {description && <p>{description}</p>}
               </div>
