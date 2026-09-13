@@ -11,7 +11,7 @@ ShotMill 是面向 AI 视频生产的素材生成工作台。当前后端进入 
 
 ## 一键启动（推荐）
 
-Windows 日常开发直接双击根目录的 `启动项目.bat`。`Start-UI.bat` 和 `启动 ShotMill UI.bat` 是兼容别名，都会进入同一套完整开发启动流程。
+Windows 日常开发直接双击根目录的 `启动 ShotMill（前端+后端）.bat`。这是唯一保留的完整开发环境 BAT 入口，负责同时管理 FastAPI 后端与 Tauri 前端。
 
 启动器会自动完成：
 
@@ -44,7 +44,7 @@ Windows 日常开发直接双击根目录的 `启动项目.bat`。`Start-UI.bat`
 & .\Start-UI.ps1
 ```
 
-该脚本只负责浏览器 UI。需要完整前后端联调时优先使用 `启动项目.bat`。
+`Start-UI.ps1` 只负责浏览器 UI；需要完整前后端联调时使用 `启动 ShotMill（前端+后端）.bat`。
 
 也可以分别手动启动。
 
