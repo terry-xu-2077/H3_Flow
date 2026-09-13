@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, status
 
-from shotmill.api.dependencies import get_container
+from shotmill.api.dependencies import ContainerDep
 from shotmill.api.schemas import TaskReorderRequest, TaskSaveRequest
-from shotmill.application.container import ApplicationContainer
 from shotmill.application.task_service import SaveTaskAsset, SaveTaskData
 from shotmill.frontend_adapter.models import TaskEditorView, TaskSummary
 
@@ -34,7 +33,7 @@ def _command(payload: TaskSaveRequest) -> SaveTaskData:
 def get_task_editor(
     project_id: str,
     task_id: str,
-    container: ApplicationContainer = Depends(get_container),
+    container: ContainerDep,
 ) -> TaskEditorView:
     return container.workspace_query.task_editor(project_id, task_id)
 
@@ -43,7 +42,7 @@ def get_task_editor(
 def create_task(
     project_id: str,
     payload: TaskSaveRequest,
-    container: ApplicationContainer = Depends(get_container),
+    container: ContainerDep,
 ) -> TaskSummary:
     task = container.task_service.create(project_id, _command(payload))
     return container.workspace_query.task_summary(project_id, task.id)
@@ -54,7 +53,7 @@ def update_task(
     project_id: str,
     task_id: str,
     payload: TaskSaveRequest,
-    container: ApplicationContainer = Depends(get_container),
+    container: ContainerDep,
 ) -> TaskSummary:
     container.task_service.update(project_id, task_id, _command(payload))
     return container.workspace_query.task_summary(project_id, task_id)
@@ -64,6 +63,6 @@ def update_task(
 def reorder_tasks(
     project_id: str,
     payload: TaskReorderRequest,
-    container: ApplicationContainer = Depends(get_container),
+    container: ContainerDep,
 ) -> None:
     container.task_service.reorder(project_id, payload.task_ids)

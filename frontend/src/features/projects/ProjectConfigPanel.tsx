@@ -45,6 +45,7 @@ function assetFormat(asset: ProjectAsset) {
 }
 
 function originalFileName(asset: ProjectAsset) {
+  if (asset.originalFilename) return asset.originalFilename;
   const normalized = (asset.projectRelativePath || "").replaceAll("\\", "/");
   return normalized.split("/").filter(Boolean).at(-1) || "—";
 }
@@ -74,12 +75,17 @@ function AssetPreview({
   onTagsChange: (tags: string[]) => void;
 }) {
   const previewRef = useRef<HTMLDivElement>(null);
+  const [tagText, setTagText] = useState(asset?.tags.join("、") ?? "");
+
+  useEffect(() => {
+    setTagText(asset?.tags.join("、") ?? "");
+  }, [asset?.id]);
 
   if (!asset) {
     return <div className="project-asset-preview-empty">选择左侧资产查看预览</div>;
   }
 
-  const source = asset.previewUrl || asset.projectRelativePath;
+  const source = asset.previewUrl || asset.mediaUrl || asset.projectRelativePath;
   const requestFullscreen = () => {
     const target = previewRef.current;
     if (!target?.requestFullscreen) return;
@@ -92,12 +98,12 @@ function AssetPreview({
         {asset.mediaType === "image" && source ? (
           <img src={source} alt={asset.name} />
         ) : asset.mediaType === "video" ? (
-          <video controls preload="metadata" poster={asset.previewUrl} src={asset.projectRelativePath} />
+          <video controls preload="metadata" poster={asset.previewUrl} src={asset.mediaUrl || asset.projectRelativePath} />
         ) : asset.mediaType === "audio" ? (
           <div className="project-audio-preview">
             <Music2 size={38} />
             <strong>{asset.name}</strong>
-            <audio controls preload="metadata" src={asset.projectRelativePath} />
+            <audio controls preload="metadata" src={asset.mediaUrl || asset.projectRelativePath} />
           </div>
         ) : (
           <div className="project-asset-preview-empty">暂无预览</div>
@@ -143,8 +149,11 @@ function AssetPreview({
           <label className="project-asset-tags-field">
             <span>标签</span>
             <input
-              value={asset.tags.join("、")}
-              onChange={(event) => onTagsChange(parseTags(event.target.value))}
+              value={tagText}
+              onChange={(event) => {
+                setTagText(event.target.value);
+                onTagsChange(parseTags(event.target.value));
+              }}
               aria-label="资产标签"
               placeholder="例如：雨夜、主角、旧港口"
             />
@@ -216,6 +225,8 @@ export function ProjectConfigPanel({ open, project, onClose, onSave }: Props) {
         previewUrl: mediaType === "image" || mediaType === "video" ? URL.createObjectURL(file) : undefined,
         tags: [],
         checksum: `local-${file.size}-${file.lastModified}`,
+        originalFilename: file.name,
+        sourceFile: file,
       };
     });
     setAssets((current) => [...current, ...nextAssets]);

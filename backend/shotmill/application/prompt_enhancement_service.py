@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 
 from shotmill.domain.entities import AiPromptRevision, new_id, utcnow
 from shotmill.domain.enums import PromptSource, TaskState
@@ -24,6 +25,17 @@ class EnhancementMedia:
 class EnhancementContextOptions:
     include_project_background: bool = False
     include_previous_task_summary: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class PromptEnhancementPreview:
+    id: str
+    created_at: datetime
+    prompt: str
+    target_skill: str
+    skill_version: str
+    provider_id: str | None
+    model_id: str | None
 
 
 class PromptEnhancementService:
@@ -96,20 +108,8 @@ class PromptEnhancementService:
             if task is None or task.project_id != project_id:
                 raise NotFoundError("TASK_NOT_FOUND", "Task not found")
 
-            binding_keys = {
-                (binding.asset_id, binding.reference) for binding in task.asset_bindings
-            }
             resolved: list[ResolvedMedia] = []
             for requested in media:
-                if (requested.asset_id, requested.reference) not in binding_keys:
-                    raise ShotMillError(
-                        "PROMPT_ASSET_NOT_BOUND",
-                        (
-                            f"Asset {requested.asset_id} with reference "
-                            f"{requested.reference} is not bound to this task"
-                        ),
-                        422,
-                    )
                 asset = uow.assets.get(requested.asset_id)
                 if asset is None or asset.project_id != project_id:
                     raise NotFoundError("ASSET_NOT_FOUND", f"Asset not found: {requested.asset_id}")
@@ -192,6 +192,99 @@ class PromptEnhancementService:
             if old_final != current.final_prompt:
                 uow.contexts.mark_stale_by_source(current.id)
         return revision
+
+    async def preview(
+        self,
+        project_id: str,
+        *,
+        target: str,
+        user_prompt: str,
+        media: tuple[EnhancementMedia, ...],
+        context: EnhancementContextOptions,
+        duration_seconds: float,
+        mode: str,
+        context_mode: str | None,
+        previous_task_id: str | None = None,
+    ) -> PromptEnhancementPreview:
+        """Enhance an unsaved task draft without creating a Task or revision."""
+        clean_prompt = user_prompt.strip()
+        if not clean_prompt:
+            raise ShotMillError(
+                "USER_PROMPT_REQUIRED",
+                "User prompt is required for enhancement",
+                422,
+            )
+
+        with self.uow_factory() as uow:
+            project = uow.projects.get(project_id)
+            if project is None:
+                raise NotFoundError("PROJECT_NOT_FOUND", "Project not found")
+
+            resolved: list[ResolvedMedia] = []
+            for requested in media:
+                asset = uow.assets.get(requested.asset_id)
+                if asset is None or asset.project_id != project_id:
+                    raise NotFoundError("ASSET_NOT_FOUND", f"Asset not found: {requested.asset_id}")
+                resolved.append(
+                    self.media_resolver.resolve(asset, requested.reference, requested.role)
+                )
+
+            project_background = None
+            if (
+                context.include_project_background
+                and project.use_description_for_ai_prompt
+                and project.description.strip()
+            ):
+                project_background = project.description.strip()
+
+            previous_summary = None
+            if context.include_previous_task_summary and not previous_task_id:
+                raise ShotMillError(
+                    "PREVIOUS_TASK_REQUIRED",
+                    "Previous task is required when its summary is enabled",
+                    422,
+                )
+            if context.include_previous_task_summary and previous_task_id:
+                previous = uow.tasks.get(previous_task_id)
+                if previous is None or previous.project_id != project_id:
+                    raise NotFoundError("TASK_NOT_FOUND", "Previous task not found")
+                previous_summary = (
+                    previous.summary.strip()
+                    or previous.user_intent.strip()
+                    or previous.title.strip()
+                    or None
+                )
+
+        resolved_tuple = tuple(resolved)
+        self._validate_provider_media(self.provider, resolved_tuple)
+        skill = self.skills.get(target)
+        message = skill.build(
+            SkillInput(
+                user_prompt=clean_prompt,
+                project_background=project_background,
+                previous_task_summary=previous_summary,
+                duration_seconds=duration_seconds,
+                mode=mode,
+                context_mode=context_mode,
+                media=resolved_tuple,
+            )
+        )
+        response = await self.provider.enhance(
+            PromptAIRequest(
+                system_prompt=message.system_prompt,
+                user_text=message.user_text,
+                media=resolved_tuple,
+            )
+        )
+        return PromptEnhancementPreview(
+            id=new_id("promptpreview"),
+            created_at=utcnow(),
+            prompt=response.text,
+            target_skill=skill.id,
+            skill_version=skill.version,
+            provider_id=response.provider_id,
+            model_id=response.model_id,
+        )
 
     def list_revisions(self, project_id: str, task_id: str) -> list[AiPromptRevision]:
         with self.uow_factory() as uow:

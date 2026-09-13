@@ -1,103 +1,55 @@
 import { expect, test } from "@playwright/test";
 
-async function openComposer(page: import("@playwright/test").Page) {
-  await page.goto("/dev/ui");
-  await page.getByRole("button", { name: "生产", exact: true }).click();
-  await page.getByTestId("task-card-task-002").dblclick();
-  await expect(page.getByTestId("task-composer")).toBeVisible();
-}
+import { createProject, importImage, openProject, useTextPrompt } from "./helpers";
 
-test("composer exposes all three editing domains", async ({ page }) => {
-  await openComposer(page);
+test("new task draft can enhance a prompt without being persisted on Cancel", async ({ page }) => {
+  const project = await createProject(page, "草稿增强");
+  await openProject(page, project.title);
+  await page.getByRole("button", { name: "新建任务" }).click();
+  await useTextPrompt(page, "角色在雨夜码头回头看向镜头。");
 
-  await expect(page.getByRole("region", { name: "剧本与设置" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Prompt 编辑" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "项目资产" })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Script Source" })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "AI Prompt" })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Final Prompt" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Prompt Validator" })).toBeVisible();
+  await page.getByRole("tab", { name: /AI 增强/ }).click();
+  await page.getByRole("button", { name: "增强" }).click();
+  await expect(page.getByRole("textbox", { name: "AI 增强提示词可视化" })).toContainText("角色在雨夜码头回头看向镜头");
+  await page.getByRole("button", { name: "取消" }).click();
+
+  await expect(page.getByRole("region", { name: "任务区域" })).toContainText("0 个任务");
+  const workspace = await page.request.get(`/api/v1/projects/${project.id}/workspace`);
+  expect((await workspace.json()).tasks).toHaveLength(0);
 });
 
-test("AI regeneration preserves the manually edited Final Prompt", async ({ page }) => {
-  await openComposer(page);
-  const finalPrompt = page.getByRole("textbox", { name: "Final Prompt" });
-  await finalPrompt.fill("MANUAL FINAL PROMPT");
+test("H3 @ asset menu inserts a readable reference and Save binds that asset", async ({ page }) => {
+  const project = await createProject(page, "资产引用");
+  const asset = await importImage(page, project.id);
+  await openProject(page, project.title);
+  await page.getByRole("button", { name: "新建任务" }).click();
 
-  await page.getByRole("button", { name: /重新生成/ }).click();
-  await expect(page.getByRole("status")).toContainText("Final Prompt 保持不变");
-
-  await expect(finalPrompt).toHaveValue("MANUAL FINAL PROMPT");
-  await expect(page.getByRole("textbox", { name: "AI Prompt" })).toHaveValue(/AI revision 3/);
-});
-
-test("background updates preserve focus, node identity, and typed content", async ({ page }) => {
-  await openComposer(page);
-  const finalPrompt = page.getByRole("textbox", { name: "Final Prompt" });
-  await finalPrompt.focus();
-  await page.keyboard.type(" focus-marker");
-  const nodeIdentity = await finalPrompt.evaluate((element) => {
-    element.dataset.identity = "stable-editor-node";
-    return element.dataset.identity;
-  });
-
-  await expect(page.getByTestId("remote-progress")).toContainText("47%");
-  await expect(finalPrompt).toBeFocused();
-  await expect(finalPrompt).toHaveValue(/focus-marker/);
-  expect(await finalPrompt.getAttribute("data-identity")).toBe(nodeIdentity);
-});
-
-test("adopting an AI revision requires confirmation", async ({ page }) => {
-  await openComposer(page);
-  await page.getByRole("button", { name: /重新生成/ }).click();
-  await expect(page.getByRole("status")).toContainText("Final Prompt 保持不变");
-  const aiPrompt = await page.getByRole("textbox", { name: "AI Prompt" }).inputValue();
-
-  await page.getByRole("button", { name: "采用此版本" }).click();
-  await expect(page.getByRole("dialog", { name: "替换 Final Prompt？" })).toBeVisible();
-  await page.getByRole("button", { name: "确认替换" }).click();
-
-  await expect(page.getByRole("textbox", { name: "Final Prompt" })).toHaveValue(aiPrompt);
-});
-
-test("composer never creates page-level horizontal overflow", async ({ page }) => {
-  await openComposer(page);
-  const widths = await page.evaluate(() => ({ viewport: window.innerWidth, document: document.documentElement.scrollWidth }));
-  expect(widths.document).toBeLessThanOrEqual(widths.viewport);
-});
-
-test("Final Prompt @ menu filters assets and inserts the selected reference", async ({ page }) => {
-  await openComposer(page);
-  const finalPrompt = page.getByRole("textbox", { name: "Final Prompt" });
-  await finalPrompt.fill("");
-  await finalPrompt.pressSequentially("镜头参考 @仓库");
-
+  const prompt = await useTextPrompt(page, "镜头参考 @林澜");
   const menu = page.getByRole("listbox", { name: "引用任务资产" });
   await expect(menu).toBeVisible();
-  await expect(page.getByRole("option", { name: /旧港口仓库外景/ })).toBeVisible();
-  await expect(page.getByRole("option", { name: /林澜/ })).toHaveCount(0);
-  await page.getByRole("option", { name: /旧港口仓库外景/ }).click();
+  await menu.getByRole("option", { name: /林澜主视觉/ }).click();
+  await expect(prompt).toHaveValue(/<Subject 1>/);
+  await page.getByRole("button", { name: "保存" }).click();
+  await expect(page.getByRole("region", { name: "任务区域" })).toContainText("1 个任务");
 
-  await expect(finalPrompt).toHaveValue("镜头参考 <Picture 1> ");
-  await expect(finalPrompt).toBeFocused();
-  await expect(menu).toHaveCount(0);
+  const workspace = await page.request.get(`/api/v1/projects/${project.id}/workspace`);
+  const taskId = (await workspace.json()).tasks[0].id as string;
+  const editor = await page.request.get(`/api/v1/projects/${project.id}/tasks/${taskId}/editor`);
+  expect((await editor.json()).assetBindings).toEqual([
+    expect.objectContaining({ assetId: asset.id, reference: "<Subject 1>" }),
+  ]);
 });
 
-test("Final Prompt @ menu stays inside the viewport", async ({ page }) => {
-  await openComposer(page);
-  const finalPrompt = page.getByRole("textbox", { name: "Final Prompt" });
-  await finalPrompt.focus();
-  await page.keyboard.press("End");
-  await page.keyboard.type(" @");
-  const menu = page.getByTestId("prompt-asset-menu");
-  await expect(menu).toBeVisible();
+test("prompt source and visual/text modes stay separate in the simple editor", async ({ page }) => {
+  const project = await createProject(page, "提示词模式");
+  await openProject(page, project.title);
+  await page.getByRole("button", { name: "新建任务" }).click();
 
-  const bounds = await menu.boundingBox();
-  const viewport = page.viewportSize();
-  expect(bounds).not.toBeNull();
-  expect(viewport).not.toBeNull();
-  expect(bounds!.x).toBeGreaterThanOrEqual(0);
-  expect(bounds!.y).toBeGreaterThanOrEqual(0);
-  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport!.width);
-  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport!.height);
+  await expect(page.getByRole("textbox", { name: "用户提示词可视化" })).toBeVisible();
+  await useTextPrompt(page, "用户版本提示词");
+  await page.getByRole("tab", { name: /AI 增强/ }).click();
+  await expect(page.getByRole("textbox", { name: "AI 增强提示词可视化" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "保存" })).toBeDisabled();
+  await page.getByRole("tab", { name: "用户" }).click();
+  await expect(page.getByRole("textbox", { name: "用户提示词" })).toHaveValue("用户版本提示词");
 });

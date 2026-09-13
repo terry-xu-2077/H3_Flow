@@ -35,6 +35,8 @@ $BackendBaseUrl = "http://127.0.0.1:$BackendPort"
 $BackendHealthUrl = "$BackendBaseUrl/health"
 $LogDir = Join-Path $Root '.shotmill\logs'
 $BackendLifecycleLog = Join-Path $LogDir 'backend-lifecycle.log'
+$DefaultComfyWorkflow = Join-Path $Root 'backend\shotmill\providers\video_generation\workflows\minimax_h3_reference_api.json'
+$SiblingComfyRoot = Join-Path (Split-Path -Parent $Root) 'ComfyUI_Codex'
 $ProxyHost = '127.0.0.1'
 $ProxyUrl = "http://${ProxyHost}:${ProxyPort}"
 $RustupUrl = 'https://win.rustup.rs/x86_64'
@@ -323,6 +325,16 @@ function Stop-ShotMillBackend {
 }
 
 Set-Location $Root
+
+if (-not $env:SHOTMILL_COMFYUI_WORKFLOW_TEMPLATE -and (Test-Path -LiteralPath $DefaultComfyWorkflow)) {
+    $env:SHOTMILL_COMFYUI_WORKFLOW_TEMPLATE = $DefaultComfyWorkflow
+}
+if (-not $env:SHOTMILL_COMFYUI_ROOT -and (Test-Path -LiteralPath $SiblingComfyRoot)) {
+    $env:SHOTMILL_COMFYUI_ROOT = $SiblingComfyRoot
+}
+if (-not $env:SHOTMILL_COMFYUI_BASE_URL -and (Test-Path -LiteralPath $SiblingComfyRoot)) {
+    $env:SHOTMILL_COMFYUI_BASE_URL = 'http://127.0.0.1:8188'
+}
 
 Write-Host 'ShotMill - Development Launcher' -ForegroundColor Green
 Write-Host "Project: $Root"

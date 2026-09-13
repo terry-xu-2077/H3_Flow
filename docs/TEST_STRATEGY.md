@@ -1,7 +1,8 @@
 # ShotMill 测试策略
 
-> 状态：规划阶段  
-> 最后更新：2026-09-11
+> 状态：持续实施
+>
+> 最后更新：2026-09-14
 
 本文件定义 ShotMill 的自动测试、回归测试、故障注入和 Codex 验收原则。
 
@@ -201,36 +202,31 @@ ShotMill Backend
 + Fake Providers
 ```
 
-核心桌面 E2E：
+当前 V0.8 冻结 UI 的核心桌面 E2E：
 
 ```text
 创建项目
-→ 导入资产
-→ 创建两个 Task
-→ 配置 Context Link
-→ 生成 Prompt
-→ Ready
-→ 批量生成
-→ 等待结果
-→ 标记通过
-→ 修改第二个 Task
-→ 再生成
-→ 设为 Primary Result
-→ 导出
+→ 打开项目工作台
+→ 创建 / 编辑 Task
+→ 在列表与卡片视图间保持同一 Task
+→ 使用 H3 @ 资产引用
+→ 草稿 AI 增强
+→ 保存或取消
+→ 验证只读任务详情与项目配置 Overlay
 ```
 
-核心手机 E2E：
+Queue、Context、Result / Primary Result 等后端行为现阶段由 Integration / Contract Test 覆盖；对应产品 UI 明确恢复后，再把它们加入 E2E，不得为了旧测试恢复已删除的复杂界面。
+
+当前手机 E2E：
 
 ```text
-打开 Remote Monitor
-→ 认证 / 配对
-→ 查看任务进度
-→ 查看生成结果
-→ 标记通过
-→ 重新排队失败任务
+打开项目首页
+→ 打开项目工作台
+→ 验证关键入口可见
+→ 验证无页面级横向溢出
 ```
 
-移动端优先使用 Playwright viewport 自动回归，真实手机只做阶段性体验测试。
+Remote Monitor 尚未进入当前产品 UI，在其正式开发前不保留虚假 E2E。移动端优先使用 Playwright viewport 自动回归，真实手机只做阶段性体验测试。
 
 ---
 

@@ -2,27 +2,28 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { App } from "./App";
+import { MockProjectGateway } from "./gateways/mockProjectGateway";
 import { OverlayProvider } from "./ui/overlay";
 
 function renderApp() {
   return render(
     <OverlayProvider>
-      <App />
+      <App gateway={new MockProjectGateway()} />
     </OverlayProvider>,
   );
 }
 
 async function openFirstProject(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: "打开项目 异星边境 初到基地" }));
+  await user.click(await screen.findByRole("button", { name: "打开项目 异星边境 初到基地" }));
 }
 
 describe("V0.6 Terry导演工作台", () => {
-  it("默认打开项目首页，只负责选择或新建项目", () => {
+  it("默认打开项目首页，只负责选择或新建项目", async () => {
     renderApp();
 
     expect(screen.getByRole("main", { name: "项目首页" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Terry导演工作台" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "打开项目 异星边境 初到基地" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "打开项目 异星边境 初到基地" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "打开项目 诡道异仙 第一部" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "打开项目 重生之我是高中学霸" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "新建项目" })).toBeInTheDocument();
@@ -65,7 +66,7 @@ describe("V0.6 Terry导演工作台", () => {
     renderApp();
     await openFirstProject(user);
 
-    await user.click(screen.getByRole("button", { name: "播放任务 特瑞在荒漠驰骋 的生成结果" }));
+    await user.click(await screen.findByRole("button", { name: "播放任务 特瑞在荒漠驰骋 的生成结果" }));
     const dialog = screen.getByRole("dialog", { name: /播放结果 · 特瑞在荒漠驰骋/ });
     expect(within(dialog).getByRole("button", { name: "关闭" })).toBeInTheDocument();
     expect(dialog.querySelector("video")).not.toBeNull();
@@ -84,7 +85,7 @@ describe("V0.6 Terry导演工作台", () => {
     const secondRow = screen.getByText("#2 越过断层台地").closest("button")!;
     fireEvent.contextMenu(secondRow);
     fireEvent.click(screen.getByRole("menuitem", { name: "编辑任务" }));
-    expect(screen.getByRole("dialog", { name: /越过断层台地/ })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: /越过断层台地/ })).toBeInTheDocument();
   });
 
   it("任务名称可以在编辑窗顶部原位修改并保存", async () => {
@@ -101,7 +102,7 @@ describe("V0.6 Terry导演工作台", () => {
     await user.keyboard("{Enter}");
     await user.click(screen.getByRole("button", { name: "保存" }));
 
-    expect(screen.getByText("#1 特瑞冲入基地")).toBeInTheDocument();
+    expect(await screen.findByText("#1 特瑞冲入基地")).toBeInTheDocument();
   });
 
   it("列表和卡片是同一任务集合的两种视图，卡片模式仍保留顶部新建任务栏", async () => {
@@ -113,7 +114,7 @@ describe("V0.6 Terry导演工作台", () => {
 
     expect(screen.getByRole("button", { name: /卡片/ })).toHaveClass("is-active");
     expect(screen.getByRole("button", { name: "新建任务卡" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /新建任务/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^新建任务$/ })).toBeInTheDocument();
     expect(screen.getByText("3 个任务")).toBeInTheDocument();
     expect(screen.getByText("#1 特瑞在荒漠驰骋")).toBeInTheDocument();
     expect(screen.getByText("#2 越过断层台地")).toBeInTheDocument();
@@ -139,7 +140,7 @@ describe("V0.6 Terry导演工作台", () => {
     await user.click(background);
     await user.click(within(dialog).getByRole("button", { name: "保存" }));
 
-    expect(screen.getAllByText("异星边境 第二版").length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("异星边境 第二版")).length).toBeGreaterThan(0);
   });
 
   it("项目配置包含资产管理入口", async () => {

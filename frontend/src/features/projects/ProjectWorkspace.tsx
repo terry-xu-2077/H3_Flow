@@ -27,6 +27,7 @@ import {
   type StoryboardDomainSnapshot,
 } from "../../domain/storyboard";
 import type { DirectorProject } from "../../mock/projects";
+import type { ProjectSummary } from "../../gateways/projectGateway";
 import { ContextMenu, Dialog } from "../../ui/overlay";
 import { TaskEditorDialog } from "../storyboard/TaskEditorDialog";
 import { insertTaskAfter, updateTaskComposerFields } from "../storyboard/storyboardMutations";
@@ -59,14 +60,6 @@ function displayTaskStatus(task: GenerationTask): DisplayStatus {
   if (task.state === "completed") return "completed";
   if (task.state === "running" || task.state === "queued") return "running";
   if (task.state === "failed") return "failed";
-  return "idle";
-}
-
-function projectStatus(project: DirectorProject): DisplayStatus {
-  const tasks = project.snapshot.tasks;
-  if (tasks.some((task) => ["running", "queued"].includes(task.state))) return "running";
-  if (tasks.length > 0 && tasks.every((task) => task.state === "completed")) return "completed";
-  if (tasks.some((task) => task.state === "failed")) return "failed";
   return "idle";
 }
 
@@ -140,10 +133,16 @@ function makeDraftTask(snapshot: StoryboardDomainSnapshot): GenerationTask {
 
 export function ProjectHome({
   projects,
+  loading = false,
+  error = "",
+  onRetry,
   onOpenProject,
   onCreateProject,
 }: {
-  projects: DirectorProject[];
+  projects: ProjectSummary[];
+  loading?: boolean;
+  error?: string;
+  onRetry?: () => void;
   onOpenProject: (projectId: string) => void;
   onCreateProject: () => void;
 }) {
@@ -156,8 +155,16 @@ export function ProjectHome({
       </header>
 
       <section className="project-folder-grid" aria-label="项目列表">
+        {loading && projects.length === 0 && (
+          <div className="project-folder-card project-create-card" role="status">正在加载项目…</div>
+        )}
+        {!loading && error && projects.length === 0 && (
+          <button type="button" className="project-folder-card project-create-card" onClick={onRetry}>
+            <div><span>项目加载失败，点击重试</span></div>
+          </button>
+        )}
         {projects.map((project, index) => {
-          const status = projectStatus(project);
+          const status = project.status;
           return (
             <button
               key={project.id}
@@ -177,7 +184,7 @@ export function ProjectHome({
                 {!project.coverUrl && <span>封面区域</span>}
               </div>
               <h2>{project.title}</h2>
-              <footer>{project.snapshot.tasks.length}个任务 {project.snapshot.assets.length}个资产</footer>
+              <footer>{project.taskCount}个任务 {project.assetCount}个资产</footer>
             </button>
           );
         })}

@@ -19,10 +19,13 @@ import {
   type StoryboardDomainSnapshot,
 } from "../../domain/storyboard";
 import type { DirectorProject } from "../../mock/projects";
-import { requestPromptEnhancement } from "../../services/promptEnhancement";
+import type {
+  PromptEnhancementRequest,
+  PromptEnhancementResponse,
+} from "../../services/promptEnhancement";
 import { ContextMenu, Dialog } from "../../ui/overlay";
 import { TaskEditorDialog } from "../storyboard/TaskEditorDialog";
-import { insertTaskAfter, updateTaskComposerFields } from "../storyboard/storyboardMutations";
+import { updateTaskComposerFields } from "../storyboard/storyboardMutations";
 import { ProjectConfigPanel } from "./ProjectConfigPanel";
 
 export { CreateProjectDialog, ProjectHome } from "./ProjectWorkspace";
@@ -30,7 +33,7 @@ export { CreateProjectDialog, ProjectHome } from "./ProjectWorkspace";
 type TaskViewMode = "list" | "card";
 type DisplayStatus = "idle" | "running" | "completed" | "failed";
 type TaskEditorPatch = Partial<Pick<GenerationTask,
-  "title" | "aiPrompt" | "finalPrompt" | "generationParams" | "plannedDurationSeconds"
+  "title" | "aiPrompt" | "finalPrompt" | "generationParams" | "plannedDurationSeconds" | "assetBindings"
 >>;
 type ProjectSettingsPatch = Pick<DirectorProject, "title" | "description" | "useDescriptionForAiPrompt">;
 
@@ -61,7 +64,7 @@ function taskResult(snapshot: StoryboardDomainSnapshot, task: GenerationTask) {
     : undefined;
   if (primary) return primary;
   const jobIds = new Set(snapshot.jobs.filter((job) => job.taskId === task.id).map((job) => job.id));
-  return snapshot.results.slice().reverse().find((result) => jobIds.has(result.jobId));
+  return snapshot.results.slice().reverse().find((result) => result.videoUrl && jobIds.has(result.jobId));
 }
 
 function taskPreview(snapshot: StoryboardDomainSnapshot, task: GenerationTask) {
@@ -176,18 +179,28 @@ export function ProjectWorkspace({
   project,
   onBack,
   onRenameProject,
-  onUpdateProjectSettings,
-  onSnapshotChange,
+  onLoadTaskEditor,
+  onCreateTask,
+  onUpdateTask,
+  onSaveProjectConfiguration,
+  onEnhancePrompt,
 }: {
   project: DirectorProject;
   onBack: () => void;
-  onRenameProject: (title: string) => void;
-  onUpdateProjectSettings: (settings: ProjectSettingsPatch) => void;
-  onSnapshotChange: (snapshot: StoryboardDomainSnapshot) => void;
+  onRenameProject: (title: string) => Promise<void>;
+  onLoadTaskEditor: (taskId: string) => Promise<GenerationTask>;
+  onCreateTask: (task: GenerationTask) => Promise<string>;
+  onUpdateTask: (task: GenerationTask) => Promise<void>;
+  onSaveProjectConfiguration: (
+    settings: ProjectSettingsPatch,
+    assets: DirectorProject["snapshot"]["assets"],
+  ) => Promise<void>;
+  onEnhancePrompt: (request: PromptEnhancementRequest) => Promise<PromptEnhancementResponse>;
 }) {
   const [viewMode, setViewMode] = useState<TaskViewMode>("list");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [loadedEditingTask, setLoadedEditingTask] = useState<GenerationTask | null>(null);
   const [draftTask, setDraftTask] = useState<GenerationTask | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState(project.title);
@@ -197,7 +210,7 @@ export function ProjectWorkspace({
 
   const tasks = useMemo(() => orderedTasks(project.snapshot), [project.snapshot]);
   const selectedTask = tasks.find((task) => task.id === selectedTaskId);
-  const editingTask = draftTask ?? tasks.find((task) => task.id === editingTaskId);
+  const editingTask = draftTask ?? loadedEditingTask;
   const editingTaskIndex = editingTask && !draftTask ? tasks.findIndex((task) => task.id === editingTask.id) : -1;
   const previousEditingTask = draftTask
     ? tasks.at(-1)
@@ -217,26 +230,33 @@ export function ProjectWorkspace({
 
   useEffect(() => setRenameValue(project.title), [project.title]);
 
-  const openExistingEditor = (taskId: string) => {
+  const openExistingEditor = async (taskId: string) => {
     setSelectedTaskId(taskId);
     setDraftTask(null);
-    setEditingTaskId(taskId);
+    setLoadedEditingTask(null);
+    try {
+      const task = await onLoadTaskEditor(taskId);
+      setEditingTaskId(taskId);
+      setLoadedEditingTask(task);
+    } catch (error) {
+      console.error("Failed to load task editor", error);
+    }
   };
 
   const openNewTask = () => {
     setDraftTask(makeDraftTask(project.snapshot));
     setEditingTaskId(null);
+    setLoadedEditingTask(null);
   };
 
   const closeEditor = () => {
     setDraftTask(null);
     setEditingTaskId(null);
+    setLoadedEditingTask(null);
   };
 
   const saveTask = (patch: TaskEditorPatch) => {
     if (draftTask) {
-      const firstSceneId = project.snapshot.scenes.slice().sort((a, b) => a.orderKey.localeCompare(b.orderKey))[0]?.id;
-      if (!firstSceneId) return;
       const finalPrompt = patch.finalPrompt ?? draftTask.finalPrompt;
       const savedTask: GenerationTask = {
         ...draftTask,
@@ -244,27 +264,28 @@ export function ProjectWorkspace({
         summary: finalPrompt.trim() || draftTask.summary,
         generationParams: { ...draftTask.generationParams, ...(patch.generationParams ?? {}) },
       };
-      const next = insertTaskAfter(project.snapshot, savedTask, firstSceneId);
-      onSnapshotChange(next);
-      setSelectedTaskId(savedTask.id);
+      void onCreateTask(savedTask)
+        .then((taskId) => setSelectedTaskId(taskId))
+        .catch((error) => console.error("Failed to create task", error));
       closeEditor();
       return;
     }
 
-    if (!editingTaskId) return;
+    if (!editingTaskId || !editingTask) return;
     const { title, plannedDurationSeconds, ...composerPatch } = patch;
-    let next = updateTaskComposerFields(project.snapshot, editingTaskId, composerPatch);
-    next = {
-      ...next,
-      tasks: next.tasks.map((task) => task.id === editingTaskId
-        ? {
-            ...task,
-            ...(typeof title === "string" && title.trim() ? { title: title.trim() } : {}),
-            ...(typeof plannedDurationSeconds === "number" ? { plannedDurationSeconds } : {}),
-          }
-        : task),
-    };
-    onSnapshotChange(next);
+    const next = updateTaskComposerFields(
+      { ...project.snapshot, tasks: project.snapshot.tasks.map((task) => task.id === editingTaskId ? editingTask : task) },
+      editingTaskId,
+      composerPatch,
+    );
+    const updated = next.tasks.find((task) => task.id === editingTaskId);
+    if (updated) {
+      void onUpdateTask({
+        ...updated,
+        ...(typeof title === "string" && title.trim() ? { title: title.trim() } : {}),
+        ...(typeof plannedDurationSeconds === "number" ? { plannedDurationSeconds } : {}),
+      }).catch((error) => console.error("Failed to update task", error));
+    }
     closeEditor();
   };
 
@@ -344,12 +365,14 @@ export function ProjectWorkspace({
 
       <TaskEditorDialog
         open={Boolean(editingTask)}
-        task={editingTask}
+        task={editingTask ?? undefined}
         assets={project.snapshot.assets}
         previousTaskDurationSeconds={previousTaskDurationSeconds}
+        previousTaskId={previousEditingTask?.id}
         previousTaskSummary={previousTaskSummary}
+        isNewTask={Boolean(draftTask)}
         projectContext={{ description: project.description, useDescriptionForAiPrompt: project.useDescriptionForAiPrompt }}
-        onEnhancePrompt={(request) => requestPromptEnhancement(project.id, request)}
+        onEnhancePrompt={onEnhancePrompt}
         onClose={closeEditor}
         onSave={saveTask}
       />
@@ -359,23 +382,15 @@ export function ProjectWorkspace({
         project={project}
         onClose={() => setProjectConfigOpen(false)}
         onSave={(settings, assets) => {
-          onUpdateProjectSettings(settings);
-          const keptAssetIds = new Set(assets.map((asset) => asset.id));
-          onSnapshotChange({
-            ...project.snapshot,
-            assets,
-            tasks: project.snapshot.tasks.map((task) => ({
-              ...task,
-              assetBindings: task.assetBindings.filter((binding) => keptAssetIds.has(binding.assetId)),
-            })),
-          });
+          void onSaveProjectConfiguration(settings, assets)
+            .catch((error) => console.error("Failed to save project configuration", error));
         }}
       />
 
       <Dialog open={renameOpen} title="重命名项目" onClose={() => setRenameOpen(false)}>
         <div className="project-simple-dialog">
           <label><span>项目名称</span><input autoFocus value={renameValue} onChange={(event) => setRenameValue(event.target.value)} /></label>
-          <footer><Button onClick={() => setRenameOpen(false)}>取消</Button><Button variant="accent" onClick={() => { const next = renameValue.trim(); if (next) onRenameProject(next); setRenameOpen(false); }}>保存</Button></footer>
+          <footer><Button onClick={() => setRenameOpen(false)}>取消</Button><Button variant="accent" onClick={() => { const next = renameValue.trim(); if (next) void onRenameProject(next).catch((error) => console.error("Failed to rename project", error)); setRenameOpen(false); }}>保存</Button></footer>
         </div>
       </Dialog>
 

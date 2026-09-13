@@ -3,11 +3,10 @@ from __future__ import annotations
 import asyncio
 import json
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
-from shotmill.api.dependencies import get_container
-from shotmill.application.container import ApplicationContainer
+from shotmill.api.dependencies import ContainerDep
 
 router = APIRouter(prefix="/projects/{project_id}", tags=["events"])
 
@@ -16,7 +15,7 @@ router = APIRouter(prefix="/projects/{project_id}", tags=["events"])
 async def project_events(
     project_id: str,
     request: Request,
-    container: ApplicationContainer = Depends(get_container),
+    container: ContainerDep,
 ) -> StreamingResponse:
     container.workspace_query.project_settings(project_id)
 

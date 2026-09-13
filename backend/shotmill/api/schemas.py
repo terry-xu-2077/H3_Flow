@@ -74,6 +74,10 @@ class PromptEnhancementRequest(ApiModel):
     generation: PromptEnhancementGenerationRequest
 
 
+class PromptEnhancementPreviewRequest(PromptEnhancementRequest):
+    previous_task_id: str | None = None
+
+
 class GenerationSubmitRequest(ApiModel):
     seed: int | None = None
 

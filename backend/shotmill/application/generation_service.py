@@ -176,6 +176,11 @@ class GenerationService:
                     )
                 )
 
+            provider_params = dict(job.params_snapshot)
+            provider_params.setdefault(
+                "durationSeconds",
+                job.task_content_snapshot.get("plannedDurationSeconds", 6),
+            )
             response = await self.provider.generate(
                 VideoGenerationRequest(
                     job_id=job.id,
@@ -183,7 +188,7 @@ class GenerationService:
                     task_id=job.task_id,
                     final_prompt=job.final_prompt_snapshot,
                     assets=tuple(resolved),
-                    params=dict(job.params_snapshot),
+                    params=provider_params,
                     seed=job.seed,
                 )
             )

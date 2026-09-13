@@ -1,6 +1,77 @@
 # ShotMill 开发记录
 
-本文件记录已经实际完成并通过验证的开发内容。当前 Storyboard 阶段以 [V0.2 Storyboard 开发任务](./V0.2_STORYBOARD_DEVELOPMENT_TASKS.md) 为主执行清单，V0.1 保留为基础工程参考。
+本文件记录已经实际完成并通过验证的开发内容。当前以后端基础与真实前后端贯通为主线，执行清单见 [V0.3 Backend Foundation](./V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS.md)；V0.2 Storyboard 文档保留为 Task-first 领域边界。
+
+## 2026-09-14 · MiniMax H3 / ComfyUI 真实生成闭环
+
+- 从 `G:\AIGC\ComfyUI_Codex` 的稳定 MiniMax H3 参考工作流捕获真实 API prompt，并固化为 ShotMill Provider Profile 模板。
+- 模板只保存 ComfyUI API 节点图，不把 H3 专属节点写入 Core；Final Prompt、seed、Task 时长、Job 输出前缀和最多五个 `<Picture N>` 参考槽由 Adapter 注入。
+- ComfyUI Adapter 会先通过本地 `/upload/image` 将 Task 真正绑定的媒体放入 `input/shotmill`，工作流只接收 ComfyUI 可解析的相对文件名，不再错误传播 ShotMill 资产绝对路径。
+- 未绑定的可选参考槽会连同 LoadImage 节点和悬空连接一起裁剪，因此同一模板可执行纯文本或 1–5 图参考任务。
+- 新增完整 Provider Contract Test，覆盖媒体上传、模板渲染、任务提交、history 轮询、`/view` 下载与视频响应。
+- 开发启动器会在用户没有显式覆盖环境变量时自动发现仓库内 H3 模板和同级 `ComfyUI_Codex`；不改变现有产品 UI。
+- 增加可重复运行的 `scripts/smoke_comfyui.py`，真实 GPU 验收输出放在已忽略的 `.artifacts/`。
+
+### 实机验收
+
+- 本机 ComfyUI 0.35.0 / RTX 3090 接受并完成真实 MiniMax H3 任务。
+- 先完成 Provider 直连 smoke，再完成 ShotMill API → Project → Task → 不可变 Job → Generation Queue → ComfyUI → Result → Primary Result 的全链路 smoke。
+- 全链路 Job 状态为 `completed`，保存真实 ComfyUI `provider_job_id`；Result 已落库，Task 状态为 `completed`、进度为 100%，Primary Result 指向新结果。
+- 项目输出视频已下载到 project-relative output；ffprobe 验证为 H.264/AAC、1280×736、24fps、1.625 秒。
+
+### 后续重点
+
+- 真实 Prompt AI 服务仍需按最终 Provider 配置做一次网络 smoke；当前没有配置外部 Prompt AI endpoint，因此日常回归继续使用确定性 Fake Provider。
+
+## 2026-09-14 · Prompt AI Provider 契约补齐
+
+- OpenAI-compatible Prompt Adapter 支持注入测试传输层，并继续由 Capability 明确声明图片、原生视频、抽帧与音频理解边界。
+- Contract Test 验证 system context、文本、真实图片 base64、可选原生视频、鉴权头、401 / 429 / 503、超时、非法 JSON、非法结构与空响应。
+- 不支持的视频 / 音频路径返回稳定业务错误，不会声称已经理解媒体；HTTP 与超时统一归一化为 Provider 不可用。
+- Prompt / Video Provider 合同测试合计 14 条通过。
+- 修复统一验收器把“不存在匹配测试”误报为失败的问题；Scheduler 等可选阶段只有发现对应测试后才加入执行，并有单元回归测试保护。
+- 最终 `python scripts/verify.py --full` 共 7 个实际阶段全部通过：后端 lint、后端测试、前端类型检查、前端测试、生产构建、Provider Contract 与桌面 / 手机 E2E。
+
+## 2026-09-14 · 新建任务无残留 AI 增强
+
+- 新建任务首次保存前改走项目级 `prompt-enhancement-previews`：后端校验项目与资产归属、解析真实媒体、应用同一 Prompt Skill，并可按稳定 `previousTaskId` 读取上一任务摘要。
+- 草稿增强不创建 Task、不写入 `AiPromptRevision`；用户保存时才把当前 AI Prompt 落入 Task，取消编辑不会留下数据库垃圾记录。
+- 已保存 Task 仍走正式增强接口并为每次增强创建独立 Revision；编辑器中新选择但尚未保存绑定的项目资产也可作为真实媒体参与增强，保存时再写入 Task Asset Binding。
+- 前端只增加网关分流和编辑状态传递，没有改变当前冻结 UI 的布局、控件或文案。
+- 新增后端集成测试与前端网关测试，覆盖真实媒体、上一任务摘要、跨项目资产拒绝、无 Task / Revision 残留及草稿路由分流。
+
+## 2026-09-14 · 冻结 UI 的新版 E2E 主路径
+
+- 移除重构前“故事板 / 生成 / 素材”复杂界面的失效断言，按当前冻结 UI 重建“项目首页 → 项目工作台 → 任务编辑 Overlay”主路径。
+- E2E 入口会自动启动隔离的 ShotMill 后端、确定性 Prompt Fake Provider、临时 SQLite 数据库和独立 Vite 端口，不依赖用户开发数据或真实 GPU。
+- 桌面覆盖项目创建与返回、Task 首次保存、同一 Task 的列表 / 卡片视图、双击与右键编辑、只读详情栏、项目配置、H3 `@` 资产引用和草稿 AI 增强取消无残留。
+- 手机端保留当前工作区可打开且无页面级横向溢出的 viewport smoke；不把桌面悬浮交互强套到手机断言。
+- `python scripts/verify.py --area e2e` 验证 12 条 Playwright 用例全部通过。
+
+## 2026-09-13 · 真实 Frontend Gateway 与运行状态接入
+
+- 当前简化 UI 已从运行时 Mock 数据切换到 `ProjectGateway`；默认使用 HTTP Gateway，测试使用同契约的内存 Gateway。
+- 项目列表、项目创建/重命名、项目设置、工作区摘要、任务创建/读取/保存、资产导入/编辑/删除、Prompt Revision 与 AI Prompt Enhancement 已接入 `/api/v1`。
+- 修复 Vite 将 `/api/v1` 错误改写成 `/v1` 的代理问题，并增加 `/media` 代理；项目资产继续只向前端暴露 `asset_id` 与 project-relative path。
+- 任务编辑器保持当前布局与通俗措辞；现有任务按需加载完整编辑数据，首页和列表只读取轻量 Read Model。
+- `@` 菜单现在读取项目资产，新任务也可插入 H3 风格引用；保存时仅把提示词实际引用的资产写成 Task Asset Binding。
+- 修复后端 `originalFileName` 到前端只读原始文件名的映射，并修复资产标签连续输入逗号时丢字符的问题。
+- AI 增强请求已改为正式后端契约，不再在开发环境静默伪造成功结果；增强后同步最新任务 revision，避免随后保存产生伪冲突。
+- 项目级 SSE 已接入 Gateway；后台运行、进度、结果与项目摘要事件会刷新当前工作区，无需改变现有 UI 结构。
+- 后端 API 依赖声明统一为现代 FastAPI `Annotated` 写法，恢复全仓后端规范检查。
+- 当前产品 UI 作为冻结层：除真实后端引入的加载、错误与状态同步外，不主动调整布局或重新引入复杂控件。
+
+### 当前验证
+
+- 后端 lint、unit/integration tests 通过。
+- Prompt / Video Provider contract tests 通过。
+- 前端类型检查、Vitest 与生产构建通过。
+
+### 当日仍未关闭（后续状态见 2026-09-14）
+
+- 当日尚未配置真实 ComfyUI API workflow；该项已于 2026-09-14 完成实机闭环。
+- 新建任务的无残留草稿增强协议已于 2026-09-14 完成。
+- 冻结 UI 的新版 Playwright 主路径已于 2026-09-14 重建并通过。
 
 ## 2026-09-13 · Windows 启动器端口复用修复
 

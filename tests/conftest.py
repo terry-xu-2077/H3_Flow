@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-
 from shotmill.app import create_app
 from shotmill.config import Settings
 from shotmill.domain.providers import (

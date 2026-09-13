@@ -143,8 +143,8 @@ describe("TaskEditorDialog", () => {
 
     await user.click(screen.getByRole("tab", { name: /AI 增强/ }));
     expect(screen.getByRole("textbox", { name: "AI 增强提示词可视化" })).toBeInTheDocument();
-    expect(screen.getByText("AI 增强已启用项目背景")).toBeInTheDocument();
-    expect(screen.getByText("AI增强会参考上一任务摘要")).toBeInTheDocument();
+    expect(screen.getByText("AI增强已启用项目背景")).toBeInTheDocument();
+    expect(await screen.findByText("AI增强会参考上一任务摘要")).toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: /文本/ }));
     expect(screen.getByRole("textbox", { name: "AI 增强提示词" })).toBeInTheDocument();
 
@@ -162,8 +162,8 @@ describe("TaskEditorDialog", () => {
     const user = userEvent.setup();
     const onSave = vi.fn();
     const onEnhancePrompt = vi.fn()
-      .mockResolvedValueOnce({ id: "ai-v1", createdAt: "2026-09-13T08:10:00+08:00", prompt: "AI增强版本一" })
-      .mockResolvedValueOnce({ id: "ai-v2", createdAt: "2026-09-13T08:12:00+08:00", prompt: "AI增强版本二" });
+      .mockResolvedValueOnce({ id: "ai-v1", createdAt: "2026-09-13T08:10:00+08:00", prompt: "AI增强版本一", taskRevision: 8 })
+      .mockResolvedValueOnce({ id: "ai-v2", createdAt: "2026-09-13T08:12:00+08:00", prompt: "AI增强版本二", taskRevision: 9 });
     const task = structuredClone(mockStoryboard.tasks[0]);
     task.aiPrompt = "";
     task.finalPrompt = "用户原始提示词";
@@ -209,9 +209,37 @@ describe("TaskEditorDialog", () => {
       generationParams: {
         promptSource: "ai",
         selectedAiPromptHistoryId: "ai-v1",
+        revision: 9,
       },
     });
     expect(onSave.mock.calls[0][0].generationParams.aiPromptHistory).toHaveLength(2);
+  });
+
+  it("lists project assets for a new task and saves an inserted @ reference as a binding", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    const task = structuredClone(mockStoryboard.tasks[0]);
+    task.assetBindings = [];
+    task.finalPrompt = "";
+    task.generationParams = { ...task.generationParams, userPrompt: "", promptSource: "user" };
+    renderEditor(onSave, vi.fn(), task);
+
+    await user.click(screen.getByRole("tab", { name: /文本/ }));
+    const prompt = screen.getByRole("textbox", { name: "用户提示词" });
+    await user.clear(prompt);
+    await user.type(prompt, "使用 @");
+    const menu = screen.getByRole("listbox", { name: "引用任务资产" });
+    await user.click(within(menu).getByRole("option", { name: /林澜 · 雨夜造型/ }));
+    await user.click(screen.getByRole("button", { name: "保存" }));
+
+    expect(onSave.mock.calls[0][0]).toMatchObject({
+      finalPrompt: "使用 <Subject 1> ",
+      assetBindings: [{
+        assetId: "asset-character-linlan",
+        role: "character",
+        reference: "<Subject 1>",
+      }],
+    });
   });
 
   it("uses whichever prompt tab is selected and shows the source in the bottom action bar", async () => {

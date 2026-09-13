@@ -122,12 +122,14 @@
   font-weight: 600;
 }
 
-.simple-task-config label {
+.simple-task-config label,
+.simple-task-config .simple-choice-field {
   display: grid;
   gap: 5px;
 }
 
-.simple-task-config label > span {
+.simple-task-config label > span,
+.simple-task-config .simple-choice-field > span {
   color: var(--sm-text-dim);
   font-size: 9px;
 }

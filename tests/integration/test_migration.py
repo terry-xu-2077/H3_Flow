@@ -1,8 +1,7 @@
 from pathlib import Path
 
-from sqlalchemy import create_engine, inspect
-
 from shotmill.persistence.migrations import upgrade_database
+from sqlalchemy import create_engine, inspect
 
 
 def test_alembic_builds_empty_database(tmp_path: Path) -> None:

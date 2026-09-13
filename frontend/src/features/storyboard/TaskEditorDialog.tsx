@@ -12,7 +12,7 @@ import type {
 import { Dialog } from "../../ui/overlay";
 
 type TaskEditorPatch = Partial<Pick<GenerationTask,
-  "title" | "aiPrompt" | "finalPrompt" | "generationParams" | "plannedDurationSeconds"
+  "title" | "aiPrompt" | "finalPrompt" | "generationParams" | "plannedDurationSeconds" | "assetBindings"
 >>;
 
 type TaskEditorSave = { bivarianceHack(patch: TaskEditorPatch): void }["bivarianceHack"];
@@ -22,7 +22,9 @@ type TaskEditorDialogProps = {
   task?: GenerationTask;
   assets: ProjectAsset[];
   previousTaskDurationSeconds?: number;
+  previousTaskId?: string;
   previousTaskSummary?: string;
+  isNewTask?: boolean;
   projectContext?: {
     description: string;
     useDescriptionForAiPrompt: boolean;
@@ -54,22 +56,24 @@ function assetKind(asset: ProjectAsset, role?: string): PromptAsset["kind"] {
 
 function promptAssetsForTask(task: GenerationTask | undefined, assets: ProjectAsset[]): PromptAsset[] {
   if (!task) return [];
+  const bindings = new Map(task.assetBindings.map((binding) => [binding.assetId, binding]));
   const counters: Record<PromptAsset["kind"], number> = { subject: 0, picture: 0, video: 0, audio: 0 };
-  return task.assetBindings.flatMap((binding) => {
-    const asset = assets.find((item) => item.id === binding.assetId);
-    if (!asset) return [];
-    const kind = assetKind(asset, binding.role);
+  return assets.map((asset) => {
+    const binding = bindings.get(asset.id);
+    const defaultRole = asset.mediaType === "audio" ? "audio" : asset.category;
+    const role = binding?.role ?? defaultRole;
+    const kind = assetKind(asset, role);
     counters[kind] += 1;
     const referenceType = kind === "subject" ? "Subject" : kind[0].toUpperCase() + kind.slice(1);
-    return [{
+    return {
       id: asset.id,
       name: asset.name,
       kind,
-      reference: `<${referenceType} ${counters[kind]}>`,
-      detail: binding.role === "character" ? "角色素材" : binding.role === "scene" ? "场景素材" : binding.role === "prop" ? "道具素材" : binding.role === "audio" ? "音频素材" : "参考素材",
+      reference: binding?.reference ?? `<${referenceType} ${counters[kind]}>`,
+      detail: role === "character" ? "角色素材" : role === "scene" ? "场景素材" : role === "prop" ? "道具素材" : role === "audio" ? "音频素材" : "参考素材",
       tone: kind === "subject" ? "amber" : kind === "video" ? "green" : kind === "audio" ? "violet" : "blue",
       previewUrl: asset.previewUrl,
-    }];
+    };
   });
 }
 
@@ -237,7 +241,9 @@ export function TaskEditorDialog({
   task,
   assets,
   previousTaskDurationSeconds = 0,
+  previousTaskId,
   previousTaskSummary = "",
+  isNewTask = false,
   projectContext,
   onEnhancePrompt,
   onClose,
@@ -261,6 +267,7 @@ export function TaskEditorDialog({
   const [contextMode, setContextMode] = useState<ContextMode>("片段承接");
   const [contextStartSeconds, setContextStartSeconds] = useState(0);
   const [contextEndSeconds, setContextEndSeconds] = useState(0);
+  const [taskRevision, setTaskRevision] = useState<number | undefined>();
 
   useEffect(() => {
     if (!open || !task) return;
@@ -302,6 +309,7 @@ export function TaskEditorDialog({
     setContextMode(normalizeContextMode(stringParam(params, "contextMode", "片段承接")));
     setContextStartSeconds(storedStart);
     setContextEndSeconds(storedEnd);
+    setTaskRevision(typeof params.revision === "number" ? params.revision : undefined);
   }, [open, previousTaskDurationSeconds, task]);
 
   const promptAssets = useMemo(() => promptAssetsForTask(task, assets), [assets, task]);
@@ -345,10 +353,12 @@ export function TaskEditorDialog({
     try {
       const response = await onEnhancePrompt({
         taskId: task.id,
+        isDraft: isNewTask,
+        previousTaskId,
         userPrompt: userPrompt.trim(),
         previousTaskSummary: previousTaskSummary.trim() || undefined,
         projectBackground,
-        assets: promptAssets.map((asset) => ({
+        assets: promptAssets.filter((asset) => userPrompt.includes(asset.reference)).map((asset) => ({
           id: asset.id,
           name: asset.name,
           reference: asset.reference,
@@ -378,6 +388,7 @@ export function TaskEditorDialog({
       setSelectedAiHistoryId(item.id);
       setAiPrompt(item.prompt);
       setPromptMode("ai");
+      if (typeof response.taskRevision === "number") setTaskRevision(response.taskRevision);
     } catch (error) {
       setEnhanceError(error instanceof Error ? error.message : "AI 增强失败，请稍后重试。 ");
     } finally {
@@ -386,11 +397,22 @@ export function TaskEditorDialog({
   };
 
   const save = () => {
+    const referencedAssets = promptAssets.filter((asset) => (
+      userPrompt.includes(asset.reference) || aiPrompt.includes(asset.reference)
+    ));
     onSave({
       title: taskTitle.trim() || task.title,
       finalPrompt: activePrompt,
       aiPrompt,
       plannedDurationSeconds: duration,
+      assetBindings: referencedAssets.map((promptAsset) => {
+        const asset = assets.find((item) => item.id === promptAsset.id)!;
+        return {
+          assetId: asset.id,
+          role: asset.mediaType === "audio" ? "audio" : asset.category,
+          reference: promptAsset.reference,
+        };
+      }),
       generationParams: {
         ...task.generationParams,
         resolution,
@@ -402,10 +424,11 @@ export function TaskEditorDialog({
         contextEndSeconds,
         promptSource: promptMode,
         userPrompt,
-        userPromptViewMode,
-        aiPromptViewMode,
+        userPromptViewMode: userViewMode,
+        aiPromptViewMode: aiViewMode,
         aiPromptHistory: aiHistory,
         selectedAiPromptHistoryId: selectedAiHistoryId || undefined,
+        revision: taskRevision,
       },
     });
     onClose();
@@ -452,7 +475,7 @@ export function TaskEditorDialog({
 
           <section>
             <h3>生成参数</h3>
-            <label>
+            <div className="simple-choice-field">
               <span>分辨率</span>
               <SegmentedChoice
                 label="分辨率"
@@ -464,8 +487,8 @@ export function TaskEditorDialog({
                   { value: "1080p", label: "1080P" },
                 ]}
               />
-            </label>
-            <label>
+            </div>
+            <div className="simple-choice-field">
               <span>质量</span>
               <SegmentedChoice
                 label="质量档位"
@@ -477,7 +500,7 @@ export function TaskEditorDialog({
                   { value: "高质量", label: "高质量" },
                 ]}
               />
-            </label>
+            </div>
             <label className="simple-slider-field">
               <span>总秒数 <strong>{duration} 秒</strong></span>
               <input

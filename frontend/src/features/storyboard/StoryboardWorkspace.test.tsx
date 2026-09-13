@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { StoryboardWorkspace } from "./StoryboardWorkspace";
@@ -145,24 +145,26 @@ describe("StoryboardWorkspace", () => {
     render(<StoryboardWorkspace density="normal" />);
 
     await user.click(screen.getByRole("button", { name: "从剧本创建任务" }));
-    expect(screen.getByRole("dialog", { name: "从剧本创建 Task Cards" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "从剧本创建分镜" })).toBeInTheDocument();
     expect(screen.getAllByTestId("storyboard-task-card")).toHaveLength(6);
 
-    await user.click(screen.getByRole("button", { name: "生成 Mock AI Proposal" }));
-    expect(screen.getAllByRole("article", { name: /Task Proposal/ })).toHaveLength(2);
+    await user.click(screen.getByRole("button", { name: "AI 建议分镜" }));
+    expect(screen.getAllByRole("article", { name: /分镜建议/ })).toHaveLength(2);
     expect(screen.getAllByTestId("storyboard-task-card")).toHaveLength(6);
 
-    const firstProposal = screen.getByRole("article", { name: "Task Proposal 1" });
-    const firstBeatEditor = within(firstProposal).getByRole("textbox", { name: "Proposal 1 Visual Beats" });
-    fireEvent.change(firstBeatEditor, { target: { value: "建立仓库外景\n靠近人物\n推门收束" } });
-    expect(firstProposal).toHaveTextContent("3 Visual Beats");
+    const firstProposal = screen.getByRole("article", { name: "分镜建议 1" });
+    const firstTitleEditor = within(firstProposal).getByRole("textbox", { name: "分镜标题" });
+    await user.clear(firstTitleEditor);
+    await user.type(firstTitleEditor, "推门前的异常停顿");
+    expect(firstTitleEditor).toHaveValue("推门前的异常停顿");
+    expect(firstProposal).toHaveTextContent("3 个内部镜头");
 
-    await user.click(within(firstProposal).getByRole("button", { name: "接受并创建" }));
+    await user.click(within(firstProposal).getByRole("button", { name: "创建分镜" }));
     expect(screen.getAllByTestId("storyboard-task-card")).toHaveLength(7);
-    expect(screen.getAllByRole("article", { name: /Task Proposal/ })).toHaveLength(1);
+    expect(screen.getAllByRole("article", { name: /分镜建议/ })).toHaveLength(1);
 
-    await user.click(screen.getByRole("button", { name: /接受全部并创建 1 个 Task/ }));
-    expect(screen.queryByRole("dialog", { name: "从剧本创建 Task Cards" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /创建全部 1 个分镜/ }));
+    expect(screen.queryByRole("dialog", { name: "从剧本创建分镜" })).not.toBeInTheDocument();
     expect(screen.getAllByTestId("storyboard-task-card")).toHaveLength(8);
   });
 
@@ -229,10 +231,10 @@ describe("StoryboardWorkspace", () => {
     render(<OverlayProvider><StoryboardWorkspace density="normal" /></OverlayProvider>);
 
     await user.click(screen.getByRole("button", { name: "Story Reel" }));
-    expect(screen.getByRole("region", { name: "Story Reel" })).toHaveTextContent("T01-001");
-    expect(screen.getByText("完整多镜头 Task · 3 Beats")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "连续预览" })).toHaveTextContent("T01-001");
+    expect(screen.getByText("包含 3 个内部镜头")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "返回 Storyboard" }));
+    await user.click(screen.getByRole("button", { name: "返回故事板" }));
     expect(screen.getByRole("region", { name: "Storyboard Task Board" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: /T01-001/ })).toHaveAttribute("data-task-id", "task-harbor-arrival");
   });

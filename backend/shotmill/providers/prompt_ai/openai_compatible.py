@@ -23,11 +23,13 @@ class OpenAICompatiblePromptAIProvider:
         *,
         supports_native_video: bool = False,
         timeout_seconds: float = 120.0,
+        transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
+        self.transport = transport
         self.capability = PromptAIProviderCapability(
             image_input=True,
             native_video_input=supports_native_video,
@@ -88,7 +90,9 @@ class OpenAICompatiblePromptAIProvider:
             ],
         }
         try:
-            async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
+            async with httpx.AsyncClient(
+                timeout=self.timeout_seconds, transport=self.transport
+            ) as client:
                 response = await client.post(
                     f"{self.base_url}/chat/completions",
                     headers=headers,
@@ -98,7 +102,14 @@ class OpenAICompatiblePromptAIProvider:
         except httpx.HTTPError as exc:
             raise ProviderUnavailableError(f"Prompt AI provider request failed: {exc}") from exc
 
-        data = response.json()
+        try:
+            data = response.json()
+        except ValueError as exc:
+            raise ShotMillError(
+                "PROMPT_PROVIDER_INVALID_RESPONSE",
+                "Prompt AI provider returned an invalid response",
+                502,
+            ) from exc
         try:
             raw_content = data["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError) as exc:
@@ -115,7 +126,11 @@ class OpenAICompatiblePromptAIProvider:
                 str(part.get("text", "")) for part in raw_content if isinstance(part, dict)
             ).strip()
         else:
-            text = str(raw_content).strip()
+            raise ShotMillError(
+                "PROMPT_PROVIDER_INVALID_RESPONSE",
+                "Prompt AI provider returned an invalid response",
+                502,
+            )
         if not text:
             raise ShotMillError(
                 "PROMPT_PROVIDER_EMPTY_RESPONSE",

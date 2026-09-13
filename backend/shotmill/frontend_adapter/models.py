@@ -159,6 +159,16 @@ class AiPromptRevisionView(ApiModel):
     model_id: str | None
 
 
+class PromptEnhancementPreviewView(ApiModel):
+    preview_id: str
+    created_at: datetime
+    prompt: str
+    target_skill: str
+    skill_version: str
+    provider_id: str | None
+    model_id: str | None
+
+
 class ResultView(ApiModel):
     id: str
     job_id: str

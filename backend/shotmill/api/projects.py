@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from shotmill.api.dependencies import get_container
+from shotmill.api.dependencies import ContainerDep
 from shotmill.api.schemas import ProjectCreateRequest, ProjectPatchRequest
-from shotmill.application.container import ApplicationContainer
 from shotmill.frontend_adapter.models import (
     ProjectListResponse,
     ProjectSettingsView,
@@ -14,14 +13,14 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 
 
 @router.get("", response_model=ProjectListResponse)
-def list_projects(container: ApplicationContainer = Depends(get_container)) -> ProjectListResponse:
+def list_projects(container: ContainerDep) -> ProjectListResponse:
     return ProjectListResponse(items=container.workspace_query.list_projects())
 
 
 @router.post("", response_model=ProjectSummary, status_code=201)
 def create_project(
     payload: ProjectCreateRequest,
-    container: ApplicationContainer = Depends(get_container),
+    container: ContainerDep,
 ) -> ProjectSummary:
     project = container.project_service.create(
         payload.title,
@@ -35,7 +34,7 @@ def create_project(
 def update_project(
     project_id: str,
     payload: ProjectPatchRequest,
-    container: ApplicationContainer = Depends(get_container),
+    container: ContainerDep,
 ) -> ProjectSummary:
     container.project_service.update(
         project_id,
@@ -49,7 +48,7 @@ def update_project(
 @router.get("/{project_id}/settings", response_model=ProjectSettingsView)
 def get_project_settings(
     project_id: str,
-    container: ApplicationContainer = Depends(get_container),
+    container: ContainerDep,
 ) -> ProjectSettingsView:
     return container.workspace_query.project_settings(project_id)
 
@@ -57,6 +56,6 @@ def get_project_settings(
 @router.get("/{project_id}/workspace", response_model=ProjectWorkspaceView)
 def get_project_workspace(
     project_id: str,
-    container: ApplicationContainer = Depends(get_container),
+    container: ContainerDep,
 ) -> ProjectWorkspaceView:
     return container.workspace_query.workspace(project_id)

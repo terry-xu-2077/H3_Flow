@@ -1,0 +1,559 @@
+{
+  "_shotmill": {
+    "profileId": "minimax-h3-reference-720p",
+    "sourceWorkflow": "异星边境_稳定720P.json",
+    "comfyuiVersion": "0.35.0",
+    "assetSlots": 5
+  },
+  "prompt": {
+    "115": {
+      "inputs": {
+        "aspect_ratio": "16:9 (Widescreen)",
+        "megapixels": 0.9,
+        "multiple": 32
+      },
+      "class_type": "ResolutionSelector",
+      "_meta": {
+        "title": "Resolution Selector (Size)"
+      }
+    },
+    "119": {
+      "inputs": {
+        "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+      },
+      "class_type": "VAELoader",
+      "_meta": {
+        "title": "加载VAE"
+      }
+    },
+    "120": {
+      "inputs": {
+        "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+      },
+      "class_type": "VAELoader",
+      "_meta": {
+        "title": "加载VAE"
+      }
+    },
+    "121": {
+      "inputs": {
+        "samples": [
+          "125",
+          0
+        ],
+        "vae": [
+          "120",
+          0
+        ]
+      },
+      "class_type": "VAEDecodeAudio",
+      "_meta": {
+        "title": "VAE解码（音频）"
+      }
+    },
+    "122": {
+      "inputs": {
+        "samples": [
+          "125",
+          0
+        ],
+        "vae": [
+          "119",
+          0
+        ]
+      },
+      "class_type": "VAEDecode",
+      "_meta": {
+        "title": "VAE解码"
+      }
+    },
+    "124": {
+      "inputs": {
+        "scheduler": "beta",
+        "steps": [
+          "166:155",
+          0
+        ],
+        "denoise": 1.0,
+        "model": [
+          "267",
+          0
+        ]
+      },
+      "class_type": "BasicScheduler",
+      "_meta": {
+        "title": "基本调度器"
+      }
+    },
+    "125": {
+      "inputs": {
+        "noise": [
+          "129",
+          0
+        ],
+        "guider": [
+          "126",
+          0
+        ],
+        "sampler": [
+          "166:153",
+          0
+        ],
+        "sigmas": [
+          "124",
+          0
+        ],
+        "latent_image": [
+          "136",
+          1
+        ]
+      },
+      "class_type": "SamplerCustomAdvanced",
+      "_meta": {
+        "title": "自定义采样器（高级）"
+      }
+    },
+    "126": {
+      "inputs": {
+        "model": [
+          "267",
+          0
+        ],
+        "conditioning": [
+          "136",
+          0
+        ]
+      },
+      "class_type": "BasicGuider",
+      "_meta": {
+        "title": "基本引导器"
+      }
+    },
+    "127": {
+      "inputs": {
+        "unet_name": "Minimax-h3_Singularity_ref2va_v1.3_int8.safetensors",
+        "weight_dtype": "default"
+      },
+      "class_type": "UNETLoader",
+      "_meta": {
+        "title": "UNet加载器"
+      }
+    },
+    "128": {
+      "inputs": {
+        "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+        "type": "minimax",
+        "device": "default"
+      },
+      "class_type": "CLIPLoader",
+      "_meta": {
+        "title": "加载CLIP"
+      }
+    },
+    "129": {
+      "inputs": {
+        "noise_seed": [
+          "145",
+          0
+        ]
+      },
+      "class_type": "RandomNoise",
+      "_meta": {
+        "title": "随机噪波"
+      }
+    },
+    "130": {
+      "inputs": {
+        "fps": 24.0,
+        "bit_depth": 8,
+        "color_space": "sRGB",
+        "images": [
+          "122",
+          0
+        ],
+        "audio": [
+          "121",
+          0
+        ]
+      },
+      "class_type": "CreateVideo",
+      "_meta": {
+        "title": "创建视频"
+      }
+    },
+    "131": {
+      "inputs": {
+        "expression": "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17",
+        "values.a": [
+          "132",
+          0
+        ]
+      },
+      "class_type": "ComfyMathExpression",
+      "_meta": {
+        "title": "数学表达式"
+      }
+    },
+    "132": {
+      "inputs": {
+        "value": "{{param:durationSeconds}}"
+      },
+      "class_type": "PrimitiveFloat",
+      "_meta": {
+        "title": "Float (Duration)"
+      }
+    },
+    "136": {
+      "inputs": {
+        "prompt": [
+          "249",
+          0
+        ],
+        "width": [
+          "115",
+          0
+        ],
+        "height": [
+          "115",
+          1
+        ],
+        "length": [
+          "131",
+          1
+        ],
+        "ref_image_size": "max",
+        "clip": [
+          "128",
+          0
+        ],
+        "vae": [
+          "119",
+          0
+        ],
+        "audio_vae": [
+          "120",
+          0
+        ],
+        "ref_images.ref_image_0": [
+          "201",
+          0
+        ],
+        "ref_images.ref_image_1": [
+          "202",
+          0
+        ],
+        "ref_images.ref_image_2": [
+          "248",
+          0
+        ],
+        "ref_images.ref_image_3": [
+          "250",
+          0
+        ],
+        "ref_images.ref_image_4": [
+          "251",
+          0
+        ]
+      },
+      "class_type": "MiniMaxH3ReferenceToVideo",
+      "_meta": {
+        "title": "MiniMax H3 参考生成视频"
+      }
+    },
+    "145": {
+      "inputs": {
+        "seed": "{{seed}}"
+      },
+      "class_type": "Seed (rgthree)",
+      "_meta": {
+        "title": "Seed (rgthree)"
+      }
+    },
+    "195": {
+      "inputs": {
+        "filename_prefix": "video/shotmill_{{job_id}}",
+        "format": "auto",
+        "format.codec": "auto",
+        "codec": "auto",
+        "video": [
+          "130",
+          0
+        ]
+      },
+      "class_type": "SaveVideo",
+      "_meta": {
+        "title": "保存视频"
+      }
+    },
+    "201": {
+      "inputs": {
+        "image": "{{asset?:<Picture 1>}}"
+      },
+      "class_type": "LoadImage",
+      "_meta": {
+        "title": "加载图像"
+      }
+    },
+    "202": {
+      "inputs": {
+        "image": "{{asset?:<Picture 2>}}"
+      },
+      "class_type": "LoadImage",
+      "_meta": {
+        "title": "加载图像"
+      }
+    },
+    "248": {
+      "inputs": {
+        "image": "{{asset?:<Picture 3>}}"
+      },
+      "class_type": "LoadImage",
+      "_meta": {
+        "title": "加载图像"
+      }
+    },
+    "249": {
+      "inputs": {
+        "prompt": "{{final_prompt}}",
+        "visual_preview": true,
+        "edit_mode": false,
+        "asset1": [
+          "201",
+          0
+        ],
+        "asset2": [
+          "202",
+          0
+        ],
+        "asset3": [
+          "248",
+          0
+        ],
+        "asset4": [
+          "250",
+          0
+        ],
+        "asset5": [
+          "251",
+          0
+        ]
+      },
+      "class_type": "TerryXuH3PromptEditor",
+      "_meta": {
+        "title": "📃 H3提示词编辑器"
+      }
+    },
+    "250": {
+      "inputs": {
+        "image": "{{asset?:<Picture 4>}}"
+      },
+      "class_type": "LoadImage",
+      "_meta": {
+        "title": "加载图像"
+      }
+    },
+    "251": {
+      "inputs": {
+        "image": "{{asset?:<Picture 5>}}"
+      },
+      "class_type": "LoadImage",
+      "_meta": {
+        "title": "加载图像"
+      }
+    },
+    "267": {
+      "inputs": {
+        "enabled": [
+          "276",
+          0
+        ],
+        "terry_channel": "开启预览",
+        "input_false": [
+          "166:159",
+          0
+        ]
+      },
+      "class_type": "TerryXuBoolSwitch",
+      "_meta": {
+        "title": "🔀 二路切换器"
+      }
+    },
+    "274": {
+      "inputs": {
+        "enabled": null
+      },
+      "class_type": "TerryXuLinkedBoolean",
+      "_meta": {
+        "title": "🔗 联动开关"
+      }
+    },
+    "275": {
+      "inputs": {
+        "enabled": null
+      },
+      "class_type": "TerryXuLinkedBoolean",
+      "_meta": {
+        "title": "🔗 联动开关"
+      }
+    },
+    "276": {
+      "inputs": {
+        "enabled": false
+      },
+      "class_type": "TerryXuLinkedBoolean",
+      "_meta": {
+        "title": "🔗 联动开关"
+      }
+    },
+    "166:167": {
+      "inputs": {
+        "switch": false,
+        "on_false": [
+          "127",
+          0
+        ],
+        "on_true": [
+          "166:158",
+          0
+        ]
+      },
+      "class_type": "ComfySwitchNode",
+      "_meta": {
+        "title": "切换"
+      }
+    },
+    "166:159": {
+      "inputs": {
+        "switch": true,
+        "on_false": [
+          "166:167",
+          0
+        ],
+        "on_true": [
+          "166:210",
+          0
+        ]
+      },
+      "class_type": "ComfySwitchNode",
+      "_meta": {
+        "title": "切换"
+      }
+    },
+    "166:158": {
+      "inputs": {
+        "reserved": 0.5,
+        "mode": "manual",
+        "seed": 675197753733414,
+        "auto_max_reserved": 0.0,
+        "clean_gpu_before": true,
+        "anything": [
+          "127",
+          0
+        ]
+      },
+      "class_type": "ReservedVRAMSetter",
+      "_meta": {
+        "title": "Set Reserved VRAM(GB) ⚙️"
+      }
+    },
+    "166:155": {
+      "inputs": {
+        "switch": true,
+        "on_false": [
+          "166:156",
+          0
+        ],
+        "on_true": [
+          "166:157",
+          0
+        ]
+      },
+      "class_type": "ComfySwitchNode",
+      "_meta": {
+        "title": "切换"
+      }
+    },
+    "166:157": {
+      "inputs": {
+        "value": 8
+      },
+      "class_type": "PrimitiveInt",
+      "_meta": {
+        "title": "整数"
+      }
+    },
+    "166:153": {
+      "inputs": {
+        "switch": true,
+        "on_false": [
+          "166:123",
+          0
+        ],
+        "on_true": [
+          "166:123",
+          0
+        ]
+      },
+      "class_type": "ComfySwitchNode",
+      "_meta": {
+        "title": "切换"
+      }
+    },
+    "166:123": {
+      "inputs": {
+        "sampler_name": "euler"
+      },
+      "class_type": "KSamplerSelect",
+      "_meta": {
+        "title": "K采样器选择"
+      }
+    },
+    "166:156": {
+      "inputs": {
+        "value": 20
+      },
+      "class_type": "PrimitiveInt",
+      "_meta": {
+        "title": "整数"
+      }
+    },
+    "166:210": {
+      "inputs": {
+        "attention": "comfy kitchen attention",
+        "model": [
+          "166:247",
+          0
+        ]
+      },
+      "class_type": "ModelAttentionBackend",
+      "_meta": {
+        "title": "ModelAttentionBackend"
+      }
+    },
+    "166:163": {
+      "inputs": {
+        "lora_name": "minimax_h3_fl2v_lightx2v_turbo_4step_v0.1_comfy.safetensors",
+        "strength": 0.75,
+        "low_vram": false
+      },
+      "class_type": "MiniMaxH3TurboLoRA",
+      "_meta": {
+        "title": "MiniMax-H3 Turbo LoRA"
+      }
+    },
+    "166:247": {
+      "inputs": {
+        "lora_name": "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+        "strength_model": 1.0,
+        "model": [
+          "166:167",
+          0
+        ]
+      },
+      "class_type": "LoraLoaderModelOnly",
+      "_meta": {
+        "title": "LoRA加载器（仅模型）"
+      }
+    }
+  }
+}

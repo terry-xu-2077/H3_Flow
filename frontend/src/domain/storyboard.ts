@@ -42,6 +42,7 @@ export type TaskVisualBeat = {
 export type TaskAssetBinding = {
   assetId: EntityId;
   role: "character" | "scene" | "prop" | "reference" | "audio";
+  reference?: string;
   notes?: string;
 };
 
@@ -54,10 +55,13 @@ export type ProjectAsset = {
   mediaType: AssetMediaType;
   category: AssetCategory;
   projectRelativePath: string;
+  mediaUrl?: string;
   previewUrl?: string;
   tags: string[];
   durationSeconds?: number;
   checksum: string;
+  originalFilename?: string;
+  sourceFile?: File;
 };
 
 export type ResolvedTaskAssetSnapshot = Readonly<TaskAssetBinding & {

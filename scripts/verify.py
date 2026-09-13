@@ -46,7 +46,14 @@ E2E = (
 
 def optional_pytest_stage(name: str, folder: str, keyword: str) -> Stage | None:
     files = tuple((ROOT / folder).rglob("test_*.py"))
-    if not files:
+    normalized_keyword = keyword.casefold()
+    matching_files = tuple(
+        path
+        for path in files
+        if normalized_keyword in path.name.casefold()
+        or normalized_keyword in path.read_text(encoding="utf-8", errors="ignore").casefold()
+    )
+    if not matching_files:
         return None
     return python_stage(name, "-m", "pytest", "-q", folder, "-k", keyword)
 

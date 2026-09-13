@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from shotmill.api.dependencies import get_container
+from shotmill.api.dependencies import ContainerDep
 from shotmill.api.schemas import GenerationSubmitRequest
-from shotmill.application.container import ApplicationContainer
 from shotmill.frontend_adapter.mapper import map_job
 from shotmill.frontend_adapter.models import JobView
 
@@ -18,7 +17,7 @@ async def submit_generation(
     project_id: str,
     task_id: str,
     payload: GenerationSubmitRequest,
-    container: ApplicationContainer = Depends(get_container),
+    container: ContainerDep,
 ) -> JobView:
     job = await container.generation_service.submit(project_id, task_id, seed=payload.seed)
     return map_job(job)
@@ -27,6 +26,6 @@ async def submit_generation(
 @router.get("/jobs/{job_id}", response_model=JobView)
 def get_job(
     job_id: str,
-    container: ApplicationContainer = Depends(get_container),
+    container: ContainerDep,
 ) -> JobView:
     return map_job(container.generation_service.get_job(job_id))

@@ -499,7 +499,15 @@ type PromptEnhancementResponse = {
 
 ## 10. AI Prompt Revision
 
-每次点击“增强”产生独立 revision，不覆盖旧版本。
+对已经保存的 Task，每次点击“增强”产生独立 revision，不覆盖旧版本。
+
+新建 Task 在首次保存前没有稳定 `taskId`，因此走项目级草稿预览接口：
+
+```http
+POST /api/v1/projects/{projectId}/prompt-enhancement-previews
+```
+
+草稿预览仍须由后端解析 `assetId`、发送真实媒体并执行同一 Prompt Skill，但不创建 Task，也不写入 `AiPromptRevision`。用户保存新 Task 时，当前预览结果作为 `aiPrompt / finalPrompt` 保存；该 Task 的正式可追溯历史从保存后的下一次增强开始。前端不得把 `previewId` 冒充为持久化 revision ID。
 
 推荐模型：
 

@@ -2,7 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  fullyParallel: false,
+  workers: 1,
   reporter: "list",
   use: {
     baseURL: process.env.SHOTMILL_E2E_BASE_URL ?? "http://127.0.0.1:1420",
@@ -18,6 +19,7 @@ export default defineConfig({
   projects: [
     {
       name: "desktop",
+      testIgnore: /mobile\.spec\.ts/,
       use: {
         ...devices["Desktop Chrome"],
         channel: "chrome",
@@ -26,6 +28,7 @@ export default defineConfig({
     },
     {
       name: "mobile",
+      testMatch: /mobile\.spec\.ts/,
       use: {
         ...devices["iPhone 13"],
         browserName: "chromium",

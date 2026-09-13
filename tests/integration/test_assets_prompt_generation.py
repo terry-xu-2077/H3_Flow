@@ -116,14 +116,120 @@ def test_prompt_enhancement_uses_bound_real_media_and_keeps_revision_history(
     assert "异星荒漠" in prompt_provider.requests[0].user_text
     assert "<Picture 1>" in prompt_provider.requests[0].user_text
 
-    history = client.get(
-        f"/api/v1/projects/{project['id']}/tasks/{task['id']}/prompt-revisions"
-    )
+    history = client.get(f"/api/v1/projects/{project['id']}/tasks/{task['id']}/prompt-revisions")
     assert history.status_code == 200
     items = history.json()["items"]
     assert len(items) == 2
     assert items[0]["id"] != items[1]["id"]
     assert items[0]["includePreviousTaskSummary"] is False
+
+
+def test_unsaved_task_prompt_preview_uses_real_media_without_persisting_history(
+    client, providers
+) -> None:
+    prompt_provider, _ = providers
+    project = _project(client)
+    asset = _upload_image(client, project["id"])
+    previous = _task(client, project["id"], asset["id"])
+
+    preview = client.post(
+        f"/api/v1/projects/{project['id']}/prompt-enhancement-previews",
+        json={
+            "target": "minimax-h3",
+            "userPrompt": "让特瑞从沙尘中现身",
+            "previousTaskId": previous["id"],
+            "media": [
+                {
+                    "assetId": asset["id"],
+                    "reference": "<Picture 1>",
+                    "role": "角色外观",
+                }
+            ],
+            "context": {
+                "includeProjectBackground": True,
+                "includePreviousTaskSummary": True,
+            },
+            "generation": {
+                "durationSeconds": 6,
+                "mode": "全能参考",
+                "contextMode": "片段承接",
+            },
+        },
+    )
+
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["previewId"].startswith("promptpreview-")
+    assert preview.json()["prompt"].startswith("ENHANCED::")
+    assert prompt_provider.requests[-1].media[0].path.read_bytes() == b"PNG-FAKE-BYTES"
+    assert "异星荒漠" in prompt_provider.requests[-1].user_text
+    assert "特瑞继续向基地移动" in prompt_provider.requests[-1].user_text
+
+    workspace = client.get(f"/api/v1/projects/{project['id']}/workspace").json()
+    assert len(workspace["tasks"]) == 1
+    history = client.get(
+        f"/api/v1/projects/{project['id']}/tasks/{previous['id']}/prompt-revisions"
+    ).json()
+    assert history["items"] == []
+
+
+def test_unsaved_task_prompt_preview_rejects_assets_from_another_project(client) -> None:
+    project = _project(client)
+    other_project = _project(client)
+    foreign_asset = _upload_image(client, other_project["id"])
+
+    response = client.post(
+        f"/api/v1/projects/{project['id']}/prompt-enhancement-previews",
+        json={
+            "target": "minimax-h3",
+            "userPrompt": "测试越权资产",
+            "media": [
+                {
+                    "assetId": foreign_asset["id"],
+                    "reference": "<Picture 1>",
+                }
+            ],
+            "generation": {
+                "durationSeconds": 6,
+                "mode": "全能参考",
+                "contextMode": "不承接",
+            },
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "ASSET_NOT_FOUND"
+
+
+def test_saved_task_can_enhance_with_a_newly_selected_project_asset(client, providers) -> None:
+    prompt_provider, _ = providers
+    project = _project(client)
+    bound_asset = _upload_image(client, project["id"])
+    task = _task(client, project["id"], bound_asset["id"])
+    newly_selected = _upload_image(client, project["id"])
+
+    response = client.post(
+        f"/api/v1/projects/{project['id']}/tasks/{task['id']}/prompt-enhancements",
+        json={
+            "target": "minimax-h3",
+            "userPrompt": "让新选择的参考图进入画面",
+            "media": [
+                {
+                    "assetId": newly_selected["id"],
+                    "reference": "<Picture 2>",
+                    "role": "场景参考",
+                }
+            ],
+            "generation": {
+                "durationSeconds": 6,
+                "mode": "全能参考",
+                "contextMode": "不承接",
+            },
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    assert response.json()["assetIds"] == [newly_selected["id"]]
+    assert prompt_provider.requests[-1].media[0].path.read_bytes() == b"PNG-FAKE-BYTES"
 
 
 def test_generation_keeps_job_snapshot_and_result_history(client, providers) -> None:
@@ -146,9 +252,7 @@ def test_generation_keeps_job_snapshot_and_result_history(client, providers) -> 
     assert original_snapshot.startswith("特瑞驾驶")
     assert video_provider.requests[0].assets[0].path.read_bytes() == b"PNG-FAKE-BYTES"
 
-    editor = client.get(
-        f"/api/v1/projects/{project['id']}/tasks/{task['id']}/editor"
-    ).json()
+    editor = client.get(f"/api/v1/projects/{project['id']}/tasks/{task['id']}/editor").json()
     update = client.patch(
         f"/api/v1/projects/{project['id']}/tasks/{task['id']}",
         json={
@@ -167,9 +271,7 @@ def test_generation_keeps_job_snapshot_and_result_history(client, providers) -> 
     )
     assert update.status_code == 200, update.text
     assert (
-        client.app.state.container.generation_service.get_job(
-            first_job["id"]
-        ).final_prompt_snapshot
+        client.app.state.container.generation_service.get_job(first_job["id"]).final_prompt_snapshot
         == original_snapshot
     )
 
@@ -180,9 +282,9 @@ def test_generation_keeps_job_snapshot_and_result_history(client, providers) -> 
     assert second_submit.status_code == 202
     assert _wait_job(client, second_submit.json()["id"])["status"] == "completed"
 
-    results = client.get(
-        f"/api/v1/projects/{project['id']}/tasks/{task['id']}/results"
-    ).json()["items"]
+    results = client.get(f"/api/v1/projects/{project['id']}/tasks/{task['id']}/results").json()[
+        "items"
+    ]
     assert len(results) == 2
     workspace = client.get(f"/api/v1/projects/{project['id']}/workspace").json()
     assert workspace["tasks"][0]["resultCount"] == 2

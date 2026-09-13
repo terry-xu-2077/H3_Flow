@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import json
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile, status
+from fastapi import APIRouter, File, Form, Query, Response, UploadFile, status
 
-from shotmill.api.dependencies import get_container
+from shotmill.api.dependencies import ContainerDep
 from shotmill.api.schemas import AssetPatchRequest
-from shotmill.application.container import ApplicationContainer
 from shotmill.frontend_adapter.mapper import map_asset
 from shotmill.frontend_adapter.models import AssetListResponse, ProjectAssetView
 
@@ -28,8 +28,8 @@ def _parse_tags(value: str | None) -> list[str]:
 @router.get("", response_model=AssetListResponse)
 def list_assets(
     project_id: str,
-    purpose: str | None = Query(default=None),
-    container: ApplicationContainer = Depends(get_container),
+    container: ContainerDep,
+    purpose: Annotated[str | None, Query()] = None,
 ) -> AssetListResponse:
     return AssetListResponse(items=container.workspace_query.list_assets(project_id, purpose))
 
@@ -37,11 +37,11 @@ def list_assets(
 @router.post("", response_model=ProjectAssetView, status_code=201)
 async def import_asset(
     project_id: str,
-    file: UploadFile = File(...),
-    name: str | None = Form(default=None),
-    category: str = Form(default="reference"),
-    tags: str | None = Form(default=None),
-    container: ApplicationContainer = Depends(get_container),
+    file: Annotated[UploadFile, File()],
+    container: ContainerDep,
+    name: Annotated[str | None, Form()] = None,
+    category: Annotated[str, Form()] = "reference",
+    tags: Annotated[str | None, Form()] = None,
 ) -> ProjectAssetView:
     content = await file.read()
     asset = container.asset_service.import_bytes(
@@ -61,7 +61,7 @@ def update_asset(
     project_id: str,
     asset_id: str,
     payload: AssetPatchRequest,
-    container: ApplicationContainer = Depends(get_container),
+    container: ContainerDep,
 ) -> ProjectAssetView:
     asset = container.asset_service.update(
         project_id,
@@ -77,7 +77,7 @@ def update_asset(
 def delete_asset(
     project_id: str,
     asset_id: str,
-    container: ApplicationContainer = Depends(get_container),
+    container: ContainerDep,
 ) -> Response:
     container.asset_service.delete(project_id, asset_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
