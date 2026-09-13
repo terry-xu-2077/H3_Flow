@@ -1,90 +1,118 @@
 # ShotMill 文档索引
 
-ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。Codex / 开发者应按任务只读取必要文档。
+ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开发者 / Codex 应按任务读取必要文档。
 
-## 核心文档
+## 当前必须优先阅读
 
-- [开发记录](./DEVELOPMENT_LOG.md)  
-  已实际完成的功能、验证结果、当前边界与下一步建议；最新记录置顶。
+- [V0.5 Terry导演工作台 UI 基线](./UI_V0.5_PROJECT_WORKSPACE.md)  
+  **当前默认产品 UI 的最高优先级文档。** 定义项目首页、项目工作台、列表 / 卡片双视图、右侧只读栏、底部状态栏、任务编辑弹窗以及“列表模式必须有新建任务按钮”等规则。
 
-- [Storyboard-style Task Workspace 数据模型](./STORYBOARD_TASK_MODEL.md)
-  **Storyboard 阶段的核心领域模型。** 明确 `1 Storyboard Card = 1 GenerationTask`；Storyboard 是分镜式 Task 交互，不是独立 Shot 工具；一个 Task 可在内部描述多个镜头 / 视觉节拍。涉及 Storyboard / Task / Result / Context 的开发必须先读本文。
-
-- [V0.2 Storyboard-style Task Workspace 开发任务](./V0.2_STORYBOARD_DEVELOPMENT_TASKS.md)
-  **已完成 V0.2 Freeze 的领域与能力回归基线。** 以画面化 Task Cards 完成故事排序、Multi-shot Prompt Composer、Result Review、Context 与 Story Reel；不建立 Shot Card + Task Band 双层主界面。V0.3 继续复用这些能力，但不再要求把全部能力暴露在默认 UI。
-
-- [V0.1 第一版开发任务](./V0.1_DEVELOPMENT_TASKS.md)  
-  第一版基础工程、`/dev/ui`、Task Composer、Provider / Core 等总体开发清单；V0.2 在其 UI 原型基础上继续演进。早期将 Task / Shot 并列表述的部分不得用于推导一一对应关系。
-
-- [产品与架构规划](./ShotMill_产品与架构规划.md)  
-  产品边界、Provider 架构、Task / Job / Result、Context、Queue、Remote Monitor、整体技术方向。若其中早期 `Task / Shot` 表述与 `STORYBOARD_TASK_MODEL.md` 冲突，以后者为准。
-
-- [UI / UX 开发规范](./UI_UX_SPEC.md)  
-  **前端实现的通用交互协议。** 包含视觉气质、全局交互规则、Overlay、基础 Workspace、Task Composer、Asset Picker、Result Review、Mobile Monitor，以及 `/dev/ui` 无真实后端的 UI 开发模式、Playwright 与视觉回归策略。
+- [V0.5 后端适配新前端方案](./V0.5_BACKEND_FRONTEND_ADAPTER.md)  
+  **真实后端接入 V0.5 前端的契约。** 定义 ProjectSummary、ProjectWorkspaceView、TaskSummary、TaskEditorView、Runtime、推荐 API、SSE、Frontend Adapter / Gateway 和实施顺序。
 
 - [Director Mode UI 开发规范](./UI_DIRECTOR_MODE_GUIDE.md)  
-  **V0.3 起的默认信息架构与防参数堆砌强制规则。** 规定一级导航、单主画布、分镜卡信息预算、简单详情边界、三级 Progressive Disclosure、用户术语映射，以及 UI Code Review 清单。凡是决定“哪些字段 / 按钮可以出现在首屏”的任务必须先读本文。
+  保留 V0.4 已确认的“查看与编辑分离、右侧只读、任务编辑使用悬浮窗、防参数墙、全中文”等规则。其旧“故事板 / 生成 / 素材”一级导航部分已被 V0.5 文档覆盖。
+
+## 领域与架构文档
+
+- [Storyboard-style Task Workspace 数据模型](./STORYBOARD_TASK_MODEL.md)  
+  核心领域模型。`GenerationTask`、Story Order、Context、Job、Result 等内部关系仍然有效，即使 V0.5 UI 不直接展示这些概念。
+
+- [产品与架构规划](./ShotMill_产品与架构规划.md)  
+  产品边界、Provider 架构、Task / Job / Result、Context、Queue、Remote Monitor、整体技术方向。
+
+- [UI / UX 开发规范](./UI_UX_SPEC.md)  
+  通用视觉、Overlay、可访问性、开发模式与视觉回归基础协议。
 
 - [测试策略](./TEST_STRATEGY.md)  
-  Unit / Integration / Contract / E2E / Hardware Smoke、Fake Provider、故障注入、Regression Test First 与 Codex 自动验收原则。
+  Unit / Integration / Contract / E2E / Hardware Smoke、Fake Provider、故障注入和回归策略。
 
-## UI 开发约定
+## 历史版本文档
 
-前端开发必须遵循以下顺序：
+- [V0.2 Storyboard-style Task Workspace 开发任务](./V0.2_STORYBOARD_DEVELOPMENT_TASKS.md)  
+  已完成能力与领域回归基线。旧三栏 / Storyboard 默认界面不得覆盖 V0.5 最新 UI 决策。
 
-```text
-Domain Contract
-   ↓
-UI_DIRECTOR_MODE_GUIDE + UI_UX_SPEC
-   ↓
-/dev/ui + Mock Data
-   ↓
-人工打磨视觉与交互手感
-   ↓
-Playwright / Visual Regression 固化
-   ↓
-接入真实 Backend / Provider
-```
+- [V0.1 第一版开发任务](./V0.1_DEVELOPMENT_TASKS.md)  
+  第一版基础工程与总体 Phase，仅保留未被后续版本覆盖的内容。
 
-V0.3 默认用户心智固定为：
+- [开发记录](./DEVELOPMENT_LOG.md)  
+  已实际完成的功能、验证结果和历史记录。
+
+---
+
+# 当前 UI 心智
+
+V0.5 默认产品结构固定为：
 
 ```text
-剧本 → 故事板 → 生成 → 看结果 / 局部返工
+项目首页
+  ↓ 选择 / 新建项目
+项目工作台
+  ├─ 列表模式
+  ├─ 卡片模式
+  ├─ 右侧只读信息栏
+  └─ 底部运行状态
+       ↓ 双击 / 右键 / 新建任务
+任务编辑弹窗
 ```
 
-一级工作区固定围绕：
+不再使用：
 
 ```text
 故事板 / 生成 / 素材
 ```
 
-Storyboard 的领域关系仍必须满足：
+作为三个默认一级页面。
+
+底层领域关系仍然满足：
 
 ```text
-1 Card = 1 GenerationTask
-Task 内可有 1..N Visual Beats
+GenerationTask 可包含 1..N Visual Beats
 Story Order 与 Generation Context 独立
+Job 是不可变执行快照
+Result 属于 Job / Task 历史
 ```
 
-但这些内部关系不等于用户必须在首屏看到 `GenerationTask / VisualBeat / ContextLink / Job / Profile / Validation` 等工程概念。默认 UI 必须按 `UI_DIRECTOR_MODE_GUIDE.md` 做信息分层。
+但这些内部关系不能直接决定默认 UI 信息架构。
 
-基础交互尚未在 `/dev/ui` 中稳定前，不应把大量真实后端逻辑绑死到 UI 组件。
+---
 
-当前前端主线进入 V0.3 Director Mode：V0.2 保留为能力和领域回归基线，默认 UI 则优先降低学习成本、重复编辑入口和参数暴露密度。
+# UI 开发顺序
 
-用户主要负责可见的视觉、信息密度与操作“手感”；后端、Provider、Scheduler、数据库、恢复逻辑等不可见部分主要通过测试策略和 Codex 闭环开发验证。
+```text
+Domain Contract
+   ↓
+UI_V0.5_PROJECT_WORKSPACE
+   ↓
+UI_DIRECTOR_MODE_GUIDE 中未冲突的防参数墙 / 查看编辑分离规则
+   ↓
+UI_UX_SPEC
+   ↓
+/dev/ui + Mock Data
+   ↓
+人工打磨视觉与交互
+   ↓
+回归测试
+   ↓
+按 V0.5_BACKEND_FRONTEND_ADAPTER 接真实后端
+```
 
-## 文档优先级
+基础 UI 尚未稳定前，不应把真实 Provider / Queue / 数据库逻辑直接绑进 React 组件。
+
+---
+
+# 文档冲突优先级
 
 发生冲突时：
 
-1. 明确的新需求 / 最新决策优先。
-2. Storyboard / Task / Result / Context 领域关系以 `STORYBOARD_TASK_MODEL.md` 为准。
-3. **首屏信息架构、参数暴露层级、用户术语以 `UI_DIRECTOR_MODE_GUIDE.md` 为准。**
-4. 其他 UI 行为与交互基础设施以 `UI_UX_SPEC.md` 为准。
-5. 测试和验收以 `TEST_STRATEGY.md` 为准。
-6. 产品边界和其他核心架构以 `ShotMill_产品与架构规划.md` 为准。
-7. V0.2 作为已完成能力 / 领域回归基线；其旧三栏默认布局不得覆盖 V0.3 Director Mode 最新决策。
-8. V0.1 尚未被后续版本覆盖的基础任务仍以 `V0.1_DEVELOPMENT_TASKS.md` 为准。
+1. 明确的新需求 / 最新决策；
+2. **`UI_V0.5_PROJECT_WORKSPACE.md`：当前默认产品页面结构与交互；**
+3. `V0.5_BACKEND_FRONTEND_ADAPTER.md`：新前端与后端的边界；
+4. `UI_DIRECTOR_MODE_GUIDE.md`：查看/编辑分离、防参数墙、用户术语等未冲突规则；
+5. `STORYBOARD_TASK_MODEL.md`：领域关系；
+6. `UI_UX_SPEC.md`：通用 UI 行为；
+7. `TEST_STRATEGY.md`：测试与验收；
+8. `ShotMill_产品与架构规划.md`：其他核心架构；
+9. V0.2 / V0.1：历史能力基线。
 
-根目录 `AGENTS.md` 应保持为轻量开发导航，避免 Codex 每次扫描整个仓库和所有文档。
+根目录 `AGENTS.md` 保持为轻量开发导航。

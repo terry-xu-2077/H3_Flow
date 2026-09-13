@@ -104,7 +104,7 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
     <Dialog
       open={open}
       size="wide"
-      title={`编辑分镜 · ${task.number}`}
+      title={`编辑任务 · ${task.number}`}
       description={task.title}
       onClose={onClose}
     >
@@ -166,9 +166,9 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
               onChange={setContextMode}
               ariaLabel="上下文承接"
               options={[
-                { value: "自动承接", label: "自动承接", detail: "系统自动使用上一分镜连续性" },
-                { value: "尾帧承接", label: "尾帧承接", detail: "优先使用上一分镜尾帧" },
-                { value: "不承接", label: "不承接", detail: "作为独立分镜生成" },
+                { value: "自动承接", label: "自动承接", detail: "系统自动使用上一任务连续性" },
+                { value: "尾帧承接", label: "尾帧承接", detail: "优先使用上一任务尾帧" },
+                { value: "不承接", label: "不承接", detail: "作为独立任务生成" },
               ]}
             />
           </section>
