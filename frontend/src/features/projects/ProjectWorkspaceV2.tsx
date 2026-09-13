@@ -197,6 +197,13 @@ export function ProjectWorkspace({
   const tasks = useMemo(() => orderedTasks(project.snapshot), [project.snapshot]);
   const selectedTask = tasks.find((task) => task.id === selectedTaskId);
   const editingTask = draftTask ?? tasks.find((task) => task.id === editingTaskId);
+  const editingTaskIndex = editingTask && !draftTask ? tasks.findIndex((task) => task.id === editingTask.id) : -1;
+  const previousEditingTask = draftTask
+    ? tasks.at(-1)
+    : editingTaskIndex > 0
+      ? tasks[editingTaskIndex - 1]
+      : undefined;
+  const previousTaskDurationSeconds = previousEditingTask?.plannedDurationSeconds ?? 0;
   const runningTask = tasks.find((task) => ["running", "queued"].includes(task.state));
 
   useEffect(() => {
@@ -335,6 +342,7 @@ export function ProjectWorkspace({
         open={Boolean(editingTask)}
         task={editingTask}
         assets={project.snapshot.assets}
+        previousTaskDurationSeconds={previousTaskDurationSeconds}
         projectContext={{ description: project.description, useDescriptionForAiPrompt: project.useDescriptionForAiPrompt }}
         onClose={closeEditor}
         onSave={saveTask}
