@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { Clapperboard, Pencil, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "terry-react-ui-library";
 
@@ -7,7 +7,7 @@ import type { GenerationTask, ProjectAsset } from "../../domain/storyboard";
 import { Dialog, PortalSelect } from "../../ui/overlay";
 
 type TaskEditorPatch = Partial<Pick<GenerationTask,
-  "aiPrompt" | "finalPrompt" | "generationParams" | "plannedDurationSeconds"
+  "title" | "aiPrompt" | "finalPrompt" | "generationParams" | "plannedDurationSeconds"
 >>;
 
 type TaskEditorDialogProps = {
@@ -19,6 +19,7 @@ type TaskEditorDialogProps = {
 };
 
 type PromptMode = "user" | "ai";
+type ContextMode = "片段承接" | "尾帧承接" | "不承接";
 
 function assetKind(asset: ProjectAsset, role?: string): PromptAsset["kind"] {
   if (role === "character") return "subject";
@@ -52,27 +53,44 @@ function stringParam(params: Record<string, unknown>, key: string, fallback: str
   return typeof value === "string" && value ? value : fallback;
 }
 
+function numberParam(params: Record<string, unknown>, key: string, fallback: number) {
+  const value = params[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function normalizeContextMode(value: string): ContextMode {
+  if (value === "自动承接" || value === "片段承接") return "片段承接";
+  if (value === "尾帧承接") return "尾帧承接";
+  return "不承接";
+}
+
 export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEditorDialogProps) {
   const [promptMode, setPromptMode] = useState<PromptMode>("user");
+  const [taskTitle, setTaskTitle] = useState("");
+  const [editingTitle, setEditingTitle] = useState(false);
   const [userPrompt, setUserPrompt] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
   const [duration, setDuration] = useState(6);
   const [resolution, setResolution] = useState("1080p");
   const [quality, setQuality] = useState("标准");
   const [generationMode, setGenerationMode] = useState("全能参考");
-  const [contextMode, setContextMode] = useState("自动承接");
+  const [contextMode, setContextMode] = useState<ContextMode>("片段承接");
+  const [contextDurationSeconds, setContextDurationSeconds] = useState(3);
 
   useEffect(() => {
     if (!open || !task) return;
     const params = task.generationParams ?? {};
     setPromptMode("user");
+    setTaskTitle(task.title);
+    setEditingTitle(false);
     setUserPrompt(task.finalPrompt || task.userIntent || task.summary || "");
     setAiPrompt(task.aiPrompt || "");
     setDuration(task.plannedDurationSeconds || 6);
     setResolution(stringParam(params, "resolution", "1080p"));
     setQuality(stringParam(params, "quality", "标准"));
     setGenerationMode(stringParam(params, "generationMode", "全能参考"));
-    setContextMode(stringParam(params, "contextMode", "自动承接"));
+    setContextMode(normalizeContextMode(stringParam(params, "contextMode", "片段承接")));
+    setContextDurationSeconds(Math.max(1, numberParam(params, "contextDurationSeconds", 3)));
   }, [open, task]);
 
   const promptAssets = useMemo(() => promptAssetsForTask(task, assets), [assets, task]);
@@ -80,6 +98,7 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
 
   const save = () => {
     onSave({
+      title: taskTitle.trim() || task.title,
       finalPrompt: userPrompt,
       aiPrompt,
       plannedDurationSeconds: duration,
@@ -89,6 +108,7 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
         quality,
         generationMode,
         contextMode,
+        contextDurationSeconds,
       },
     });
     onClose();
@@ -100,12 +120,39 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
     setPromptMode("user");
   };
 
+  const titleNode = (
+    <span className="task-dialog-title">
+      <Clapperboard size={18} aria-hidden="true" />
+      {editingTitle ? (
+        <input
+          autoFocus
+          value={taskTitle}
+          aria-label="任务名称"
+          onChange={(event) => setTaskTitle(event.target.value)}
+          onBlur={() => setEditingTitle(false)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.currentTarget.blur();
+            if (event.key === "Escape") {
+              setTaskTitle(task.title);
+              setEditingTitle(false);
+            }
+          }}
+        />
+      ) : (
+        <button type="button" className="task-dialog-title-edit" onClick={() => setEditingTitle(true)} aria-label="编辑任务名称">
+          <span>{taskTitle || task.title}</span>
+          <Pencil size={14} aria-hidden="true" />
+        </button>
+      )}
+    </span>
+  );
+
   return (
     <Dialog
       open={open}
       size="wide"
-      title={`编辑任务 · ${task.number}`}
-      description={task.title}
+      title={titleNode}
+      description={`任务编号 ${task.number}`}
       onClose={onClose}
     >
       <div className="simple-task-editor" data-testid="simple-task-editor">
@@ -159,18 +206,49 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
             />
           </section>
 
-          <section>
+          <section className="simple-context-section">
             <h3>上下文承接</h3>
-            <PortalSelect
-              value={contextMode}
-              onChange={setContextMode}
-              ariaLabel="上下文承接"
-              options={[
-                { value: "自动承接", label: "自动承接", detail: "系统自动使用上一任务连续性" },
-                { value: "尾帧承接", label: "尾帧承接", detail: "优先使用上一任务尾帧" },
-                { value: "不承接", label: "不承接", detail: "作为独立任务生成" },
-              ]}
-            />
+            <div className="simple-context-tabs" role="tablist" aria-label="上下文承接方式">
+              {(["片段承接", "尾帧承接", "不承接"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  role="tab"
+                  aria-selected={contextMode === mode}
+                  className={contextMode === mode ? "is-active" : ""}
+                  onClick={() => setContextMode(mode)}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
+
+            {contextMode === "片段承接" && (
+              <div className="simple-context-params">
+                <label className="simple-duration-input">
+                  <span>承接时长</span>
+                  <div>
+                    <input
+                      type="number"
+                      min={1}
+                      max={Math.max(1, Math.min(15, duration))}
+                      value={contextDurationSeconds}
+                      onChange={(event) => setContextDurationSeconds(Math.max(1, Number(event.target.value) || 1))}
+                    />
+                    <em>秒</em>
+                  </div>
+                </label>
+                <small>从上一任务末尾取一段画面与运动信息作为连续性参考。</small>
+              </div>
+            )}
+
+            {contextMode === "尾帧承接" && (
+              <p className="simple-context-note">使用上一任务最终帧作为本任务的起始视觉参考。</p>
+            )}
+
+            {contextMode === "不承接" && (
+              <p className="simple-context-note">本任务独立生成，不引用上一任务的连续性信息。</p>
+            )}
           </section>
         </aside>
 
@@ -195,13 +273,17 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
             </div>
           ) : (
             <div className="simple-prompt-body simple-ai-prompt">
-              <textarea value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} aria-label="AI 增强提示词" rows={18} placeholder="AI 增强结果会显示在这里。" />
-              <footer>
-                <span>AI 增强稿不会自动覆盖用户提示词。</span>
+              <div className="simple-ai-action">
                 <Button onClick={useAiPrompt} disabled={!aiPrompt.trim()}>采用增强结果</Button>
-              </footer>
+              </div>
+              <textarea value={aiPrompt} onChange={(event) => setAiPrompt(event.target.value)} aria-label="AI 增强提示词" rows={18} placeholder="AI 增强结果会显示在这里。" />
             </div>
           )}
+
+          <footer className="simple-prompt-footer">
+            <span><strong>@</strong> 输入 @ 可引用当前任务素材</span>
+            <span>AI 增强不会自动覆盖用户提示词</span>
+          </footer>
         </section>
 
         <footer className="simple-task-editor-actions">
