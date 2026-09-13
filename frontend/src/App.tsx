@@ -4,7 +4,7 @@ import {
   CreateProjectDialog,
   ProjectHome,
   ProjectWorkspace,
-} from "./features/projects/ProjectWorkspace";
+} from "./features/projects/ProjectWorkspaceV2";
 import {
   makeEmptyProject,
   makeMockProjects,
