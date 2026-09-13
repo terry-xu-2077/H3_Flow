@@ -1,4 +1,3 @@
-import { FileImage, Film, UserRound, Volume2 } from "lucide-react";
 import { useLayoutEffect, useMemo, useRef } from "react";
 
 import { PromptAssetEditor, type PromptAsset } from "./PromptAssetEditor";
@@ -111,31 +110,11 @@ function appendText(container: HTMLElement, text: string) {
   });
 }
 
-function iconForAsset(asset: PromptAsset) {
-  if (asset.kind === "subject") return UserRound;
-  if (asset.kind === "video") return Film;
-  if (asset.kind === "audio") return Volume2;
-  return FileImage;
-}
-
-function appendIcon(container: HTMLElement, asset: PromptAsset) {
-  const Icon = iconForAsset(asset);
-  const holder = document.createElement("span");
-  holder.className = "h3-visual-chip-icon";
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("width", "13");
-  svg.setAttribute("height", "13");
-  svg.setAttribute("viewBox", "0 0 24 24");
-  svg.setAttribute("fill", "none");
-  svg.setAttribute("stroke", "currentColor");
-  svg.setAttribute("stroke-width", "2");
-  svg.setAttribute("stroke-linecap", "round");
-  svg.setAttribute("stroke-linejoin", "round");
-  const temp = document.createElement("div");
-  // Keep the visual editor independent from React roots. A compact dot is enough when SVG paths are unavailable.
-  temp.dataset.icon = Icon.displayName || Icon.name || asset.kind;
-  holder.append(svg);
-  container.append(holder);
+function mediaGlyph(asset: PromptAsset) {
+  if (asset.kind === "subject") return "人";
+  if (asset.kind === "video") return "▶";
+  if (asset.kind === "audio") return "♪";
+  return "图";
 }
 
 function createDialogueChip(raw: string, notifyChange: () => void) {
@@ -203,7 +182,10 @@ function createTokenChip(raw: string, assets: PromptAsset[], notifyChange: () =>
       image.alt = asset.name;
       chip.append(image);
     } else {
-      appendIcon(chip, asset);
+      const glyph = document.createElement("span");
+      glyph.className = "h3-visual-chip-glyph";
+      glyph.textContent = mediaGlyph(asset);
+      chip.append(glyph);
     }
     const label = document.createElement("span");
     label.textContent = asset.name || visibleLabel(raw);
