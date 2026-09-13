@@ -8,6 +8,7 @@ import "./styles/app.css";
 import "./styles/storyboard.css";
 import "./styles/composer.css";
 import "./styles/overlays.css";
+import "./styles/director.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
