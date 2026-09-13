@@ -87,7 +87,7 @@ describe("Director Mode app shell", () => {
     await user.click(within(harborScene).getByRole("button", { name: "添加分镜" }));
 
     expect(screen.getByRole("complementary", { name: "分镜详情" })).toHaveTextContent("未命名分镜");
-    expect(screen.getByRole("status")).toHaveTextContent("已添加一个空白分镜");
+    expect(screen.getByText("已添加一个空白分镜")).toBeInTheDocument();
   });
 
   it("keeps Assets as a separate supporting workspace", async () => {
