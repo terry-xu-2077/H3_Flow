@@ -42,6 +42,28 @@ describe("Overlay system", () => {
     expect(document.getElementById("shotmill-overlay-root")).toContainElement(menu);
   });
 
+  it("keeps select menus constrained to the trigger width", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+
+    const trigger = screen.getByRole("button", { name: "上下文模式" });
+    vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue({
+      x: 40,
+      y: 60,
+      left: 40,
+      top: 60,
+      right: 280,
+      bottom: 94,
+      width: 240,
+      height: 34,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    await user.click(trigger);
+    const menu = screen.getByRole("listbox", { name: "上下文模式选项" });
+    expect(menu).toHaveStyle({ width: "240px" });
+  });
+
   it("closes only the topmost overlay on each Escape press", async () => {
     const user = userEvent.setup();
     render(<Harness />);
