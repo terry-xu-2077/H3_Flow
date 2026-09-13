@@ -49,6 +49,7 @@ export function App() {
       project={currentProject}
       onBack={() => setCurrentProjectId(null)}
       onRenameProject={(title) => updateProject(currentProject.id, (project) => ({ ...project, title }))}
+      onUpdateProjectSettings={(settings) => updateProject(currentProject.id, (project) => ({ ...project, ...settings }))}
       onSnapshotChange={(snapshot) => updateProject(currentProject.id, (project) => ({ ...project, snapshot }))}
     />
   );
