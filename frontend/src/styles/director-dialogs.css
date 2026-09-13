@@ -48,6 +48,32 @@
   max-width: 76px;
 }
 
+.asset-technical-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 12px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--sm-text-dim);
+  background: transparent;
+  cursor: pointer;
+  font-size: 9px;
+}
+.asset-technical-toggle:hover { color: var(--sm-text); background: var(--sm-surface-2); }
+.asset-technical-info {
+  display: grid;
+  gap: 5px;
+  margin-top: 7px;
+  padding: 8px;
+  border: 1px solid var(--sm-border);
+  border-radius: 7px;
+  background: var(--sm-surface-2);
+}
+.asset-technical-info p,
+.asset-technical-info code { margin: 0; color: var(--sm-text-dim); font-size: 8px; line-height: 1.5; word-break: break-all; }
+
 @media (max-width: 900px) {
   .director-suggestion-row { grid-template-columns: 1fr; }
 }
