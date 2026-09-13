@@ -62,11 +62,11 @@ describe("TaskEditorDialog", () => {
     await user.clear(prompt);
     await user.type(prompt, "主角走入仓库，保持雨夜连续性。");
 
-    const duration = screen.getByRole("spinbutton", { name: "总秒数" });
+    const duration = screen.getByRole("spinbutton", { name: /总秒数/ });
     await user.clear(duration);
     await user.type(duration, "9");
 
-    const contextDuration = screen.getByRole("spinbutton", { name: "承接时长" });
+    const contextDuration = screen.getByRole("spinbutton", { name: /承接时长/ });
     await user.clear(contextDuration);
     await user.type(contextDuration, "4");
 
@@ -93,7 +93,7 @@ describe("TaskEditorDialog", () => {
     expect(screen.queryByRole("button", { name: "上下文承接" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "尾帧承接" }));
     expect(screen.getByText("使用上一任务最终帧作为本任务的起始视觉参考。")).toBeInTheDocument();
-    expect(screen.queryByRole("spinbutton", { name: "承接时长" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton", { name: /承接时长/ })).not.toBeInTheDocument();
   });
 
   it("keeps the prompt footer stable when switching to AI enhancement", async () => {
