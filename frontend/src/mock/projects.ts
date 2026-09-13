@@ -44,6 +44,7 @@ function firstProjectSnapshot() {
     finalPrompt: prompts[index] ?? task.finalPrompt,
     state: index === 0 ? "completed" : index === 1 ? "running" : "draft",
     progress: index === 1 ? 43 : undefined,
+    primaryResultId: index === 0 ? "result-arrival-2" : task.primaryResultId,
   }));
   return snapshot;
 }
