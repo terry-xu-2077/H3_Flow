@@ -20,6 +20,8 @@ pnpm --dir frontend install
 
 日常打磨 UI 时，直接双击根目录的 `启动项目.bat`。该入口参考 Rulesmd_editor：BAT 调用系统默认 PowerShell 执行 `scripts/start-dev.ps1`，自动检查前端与 Rust 环境并启动 Tauri 桌面开发窗口。`Start-UI.bat` 和 `启动 ShotMill UI.bat` 是兼容别名。
 
+如果 `1420` 已经运行本项目的 ShotMill 前端，启动器会直接复用它并跳过第二次 Vite 启动；如果端口属于其他程序，则会显示明确的占用提示，不会结束无关进程。
+
 也可以从 PowerShell 启动：
 
 启动浏览器 UI（自动打开 `/dev/ui`，支持热更新）：

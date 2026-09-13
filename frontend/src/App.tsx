@@ -19,26 +19,31 @@ import { OverlayLab } from "./components/OverlayLab";
 import { ScenarioPanel } from "./components/ScenarioPanel";
 import { TaskCard } from "./components/TaskCard";
 import { TaskComposer } from "./components/TaskComposer";
+import { StoryboardWorkspace } from "./features/storyboard/StoryboardWorkspace";
+import { AssetLibraryWorkspace } from "./features/assets/AssetLibraryWorkspace";
+import { ResultReviewWorkspace } from "./features/results/ResultReviewWorkspace";
+import { mockProjectAssets } from "./mock/assets";
+import { storyboardForDensity, type StoryboardDensity } from "./mock/storyboardScenarios";
 import { mockTasks } from "./mock/tasks";
-import type { ShotTask } from "./types";
+import type { GenerationTaskCardView } from "./types";
 import { useToast } from "./ui/overlay";
 
 const navigation = [
-  { label: "任务", icon: FolderKanban },
+  { label: "分镜", icon: FolderKanban },
   { label: "资产", icon: Boxes },
-  { label: "生产状态", icon: CircleGauge },
+  { label: "生产", icon: CircleGauge },
   { label: "结果", icon: Film },
   { label: "项目设置", icon: Settings2 },
 ];
 
 const taskStatusFilters = {
   all: () => true,
-  attention: (task: ShotTask) => ["failed", "blocked", "context-stale"].includes(task.status),
-  running: (task: ShotTask) => task.status === "running",
-  completed: (task: ShotTask) => task.status === "completed",
-} satisfies Record<string, (task: ShotTask) => boolean>;
+  attention: (task: GenerationTaskCardView) => ["failed", "blocked", "context-stale"].includes(task.state),
+  running: (task: GenerationTaskCardView) => task.state === "running",
+  completed: (task: GenerationTaskCardView) => task.state === "completed",
+} satisfies Record<string, (task: GenerationTaskCardView) => boolean>;
 
-function tasksForDensity(density: string): ShotTask[] {
+function tasksForDensity(density: StoryboardDensity): GenerationTaskCardView[] {
   if (density === "empty") return [];
   if (density === "dense") {
     return Array.from({ length: 4 }, (_, index) =>
@@ -53,16 +58,18 @@ function tasksForDensity(density: string): ShotTask[] {
 }
 
 export function App() {
-  const [activeNav, setActiveNav] = useState("任务");
+  const [activeNav, setActiveNav] = useState("分镜");
   const [selectedIds, setSelectedIds] = useState<string[]>(["task-002"]);
   const [lastSelectedId, setLastSelectedId] = useState("task-002");
   const [providerOnline, setProviderOnline] = useState(true);
-  const [taskDensity, setTaskDensity] = useState("normal");
-  const [taskItems, setTaskItems] = useState<ShotTask[]>(() => tasksForDensity("normal"));
+  const [taskDensity, setTaskDensity] = useState<StoryboardDensity>("normal");
+  const [storyboardSnapshot, setStoryboardSnapshot] = useState(() => storyboardForDensity("normal"));
+  const [storyboardFocusTaskId, setStoryboardFocusTaskId] = useState<string | null>(null);
+  const [taskItems, setTaskItems] = useState<GenerationTaskCardView[]>(() => tasksForDensity("normal"));
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<keyof typeof taskStatusFilters>("all");
   const [overlayLabOpen, setOverlayLabOpen] = useState(false);
-  const [composerTaskId, setComposerTaskId] = useState<string | null>(null);
+  const [composerTask, setComposerTask] = useState<GenerationTaskCardView | null>(null);
   const isDevUi = window.location.pathname.startsWith("/dev/ui");
   const pushToast = useToast();
 
@@ -71,12 +78,12 @@ export function App() {
     setTaskItems(nextTasks);
     setSelectedIds(nextTasks[1] ? [nextTasks[1].id] : []);
     setLastSelectedId(nextTasks[1]?.id ?? "");
-    setComposerTaskId(null);
+    setComposerTask(null);
+    setStoryboardSnapshot(storyboardForDensity(taskDensity));
+    setStoryboardFocusTaskId(null);
   }, [taskDensity]);
 
   const selectedTask = taskItems.find((task) => selectedIds.includes(task.id)) ?? taskItems[0];
-  const composerTask = taskItems.find((task) => task.id === composerTaskId);
-
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const tasks = useMemo(
     () => taskItems.filter((task) => {
@@ -93,7 +100,7 @@ export function App() {
     completed: taskItems.filter(taskStatusFilters.completed).length,
   }), [taskItems]);
 
-  const selectTask = (task: ShotTask, event: React.MouseEvent) => {
+  const selectTask = (task: GenerationTaskCardView, event: React.MouseEvent) => {
     if (event.shiftKey && lastSelectedId) {
       const anchorIndex = tasks.findIndex((item) => item.id === lastSelectedId);
       const targetIndex = tasks.findIndex((item) => item.id === task.id);
@@ -121,14 +128,15 @@ export function App() {
     const current = taskItems.find((task) => selectedIds.includes(task.id));
     const sequence = taskItems.length + 1;
     const id = `task-local-${Date.now()}`;
-    const task: ShotTask = {
+    const task: GenerationTaskCardView = {
       id,
       number: `S01-${String(sequence).padStart(3, "0")}`,
-      title: inheritCurrent ? `${current?.title ?? "新镜头"} · 下一镜` : "未命名镜头",
+      title: inheritCurrent ? `${current?.title ?? "新任务"} · 下一任务` : "未命名任务",
       summary: inheritCurrent ? "已继承上一任务的常用参数，等待粘贴下一段剧本。" : "等待补充剧本与创作意图。",
-      status: "draft",
-      assets: inheritCurrent ? current?.assets ?? 0 : 0,
-      duration: inheritCurrent ? current?.duration ?? "6s" : "—",
+      state: "draft",
+      assetCount: inheritCurrent ? current?.assetCount ?? 0 : 0,
+      plannedDurationLabel: inheritCurrent ? current?.plannedDurationLabel ?? "6s" : "—",
+      visualBeatCount: 0,
     };
     setTaskItems((items) => [...items, task]);
     setSelectedIds([id]);
@@ -145,7 +153,7 @@ export function App() {
       id: `${task.id}-copy-${stamp}-${index}`,
       number: `S01-${String(taskItems.length + index + 1).padStart(3, "0")}`,
       title: `${task.title} · 副本`,
-      status: "draft" as const,
+      state: "draft" as const,
       progress: undefined,
     }));
     setTaskItems((items) => [...items, ...copies]);
@@ -174,19 +182,23 @@ export function App() {
         </div>
       </header>
 
-      <div className={`app-body ${composerTask ? "has-composer" : ""}`}>
+      <div className={`app-body ${composerTask ? "has-composer" : ""} ${activeNav === "生产" && !composerTask ? "has-inspector" : ""}`}>
         <nav className="sidebar" aria-label="主导航">
           <div className="nav-items">
             {navigation.map(({ label, icon: Icon }) => (
               <button
                 key={label}
                 type="button"
+                aria-label={label}
                 className={activeNav === label ? "is-active" : ""}
-                onClick={() => setActiveNav(label)}
+                onClick={() => {
+                  setActiveNav(label);
+                  setComposerTask(null);
+                }}
               >
                 <Icon size={19} />
                 <span>{label}</span>
-                {label === "生产状态" && <em>7</em>}
+                {label === "生产" && <em>7</em>}
               </button>
             ))}
           </div>
@@ -196,16 +208,35 @@ export function App() {
           </div>
         </nav>
 
-        <main className={`workspace ${composerTask ? "composer-workspace" : ""}`}>
+        <main className={`workspace ${composerTask ? "composer-workspace" : ""} ${activeNav === "分镜" && !composerTask ? "storyboard-workspace-host" : ""} ${activeNav === "结果" && !composerTask ? "result-review-host" : ""}`}>
           {composerTask ? (
-            <TaskComposer task={composerTask} onClose={() => setComposerTaskId(null)} />
-          ) : (
+            <TaskComposer task={composerTask} onClose={() => setComposerTask(null)} />
+          ) : activeNav === "分镜" ? (
+            <StoryboardWorkspace
+              density={taskDensity}
+              providerOnline={providerOnline}
+              value={storyboardSnapshot}
+              onChange={setStoryboardSnapshot}
+              focusTaskId={storyboardFocusTaskId}
+            />
+          ) : activeNav === "资产" ? (
+            <AssetLibraryWorkspace assets={mockProjectAssets} />
+          ) : activeNav === "结果" ? (
+            <ResultReviewWorkspace
+              snapshot={storyboardSnapshot}
+              onChange={setStoryboardSnapshot}
+              onEditTask={(taskId) => {
+                setStoryboardFocusTaskId(taskId);
+                setActiveNav("分镜");
+              }}
+            />
+          ) : activeNav === "生产" ? (
             <>
           <section className="workspace-head">
             <div>
               <span className="eyebrow">TASK PRODUCTION</span>
-              <h1>{activeNav === "任务" ? "任务生产区" : activeNav}</h1>
-              <p>按镜头准备生产单，确认后统一交给生成队列。</p>
+              <h1>任务生产区</h1>
+              <p>按故事段落准备 Generation Task，确认后统一交给生成队列。</p>
             </div>
             <div className="workspace-actions">
               <Button onClick={duplicateSelected} disabled={selectedIds.length === 0}><Copy size={16} /> 复制任务</Button>
@@ -252,7 +283,7 @@ export function App() {
                   task={task}
                   selected={selectedIds.includes(task.id)}
                   onSelect={selectTask}
-                  onOpen={(selected) => setComposerTaskId(selected.id)}
+                  onOpen={setComposerTask}
                 />
               ))}
             </section>
@@ -265,10 +296,16 @@ export function App() {
             </section>
           )}
             </>
+          ) : (
+            <section className="empty-state section-placeholder">
+              <span><FolderKanban size={28} /></span>
+              <h1>{activeNav}</h1>
+              <p>该工作区将在后续 V0.2 阶段接入。</p>
+            </section>
           )}
         </main>
 
-        {!composerTask && <aside className="inspector" aria-label="任务详情">
+        {activeNav === "生产" && !composerTask && <aside className="inspector" aria-label="任务详情">
           <header>
             <span className="eyebrow">CURRENT TASK</span>
             <h2>S01-002</h2>
@@ -291,7 +328,7 @@ export function App() {
             <div className="key-value"><span>尺寸</span><strong>16:9 · 1080p</strong></div>
             <div className="key-value"><span>时长</span><strong>6 秒</strong></div>
           </section>
-          <Button onClick={() => selectedTask && setComposerTaskId(selectedTask.id)}>打开任务编辑器</Button>
+          <Button onClick={() => selectedTask && setComposerTask(selectedTask)}>打开任务编辑器</Button>
         </aside>}
       </div>
 

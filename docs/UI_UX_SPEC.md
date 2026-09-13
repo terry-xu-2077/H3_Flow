@@ -488,6 +488,10 @@ Task Workspace 是应用使用频率最高的页面。
 
 > **大量任务仍然保持清楚、可扫视、可批量处理。**
 
+V0.2 将该页面升级为 Storyboard-style Task Workspace。“Storyboard”描述画面化、按故事顺序排列的交互方式；其中每张卡片仍然是一个 `GenerationTask`，一张卡可以在 Task 内表达一个或多个镜头 / 视觉节拍。不得另画一套 Shot Cards 与 Task Bands 争夺主层级。
+
+Scene Section 用于组织 Task Cards；单击卡片更新 Task Inspector，双击进入 Task Composer。卡片重排调整 Story Order，但不得静默改变 Task Context、Job 或 Result。
+
 ### 7.1 Task Card 内容优先级
 
 建议视觉层级：

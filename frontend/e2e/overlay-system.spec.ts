@@ -2,9 +2,7 @@ import { expect, test } from "@playwright/test";
 
 async function openLab(page: import("@playwright/test").Page) {
   await page.goto("/dev/ui");
-  if (page.viewportSize()!.width <= 760) {
-    await page.getByRole("button", { name: "场景" }).click();
-  }
+  await page.getByRole("button", { name: "场景", exact: true }).click();
   await page.getByRole("button", { name: /浮层实验室/ }).click();
   await expect(page.getByRole("dialog", { name: "浮层边界实验室" })).toBeVisible();
 }

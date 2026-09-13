@@ -2,13 +2,14 @@ import { useState } from "react";
 import { ChevronLeft, Layers, SlidersHorizontal } from "lucide-react";
 import { Button } from "terry-react-ui-library";
 
+import type { StoryboardDensity } from "../mock/storyboardScenarios";
 import { PortalSelect } from "../ui/overlay";
 
 type ScenarioPanelProps = {
   providerOnline: boolean;
   onProviderChange: (online: boolean) => void;
-  taskDensity: string;
-  onTaskDensityChange: (value: string) => void;
+  taskDensity: StoryboardDensity;
+  onTaskDensityChange: (value: StoryboardDensity) => void;
   onOpenOverlayLab: () => void;
 };
 
@@ -19,7 +20,7 @@ export function ScenarioPanel({
   onTaskDensityChange,
   onOpenOverlayLab,
 }: ScenarioPanelProps) {
-  const [open, setOpen] = useState(() => window.innerWidth > 760);
+  const [open, setOpen] = useState(false);
 
   return (
     <aside className={`scenario-panel ${open ? "is-open" : ""}`} aria-label="UI 场景控制器">
@@ -47,16 +48,16 @@ export function ScenarioPanel({
             />
           </label>
           <label>
-            <span>任务数量</span>
+            <span>分镜内容量</span>
             <PortalSelect
               value={taskDensity}
               options={[
-                { value: "empty", label: "空数据" },
-                { value: "normal", label: "6 个任务" },
-                { value: "dense", label: "24 个任务" },
+                { value: "empty", label: "空 Scene" },
+                { value: "normal", label: "6 Tasks" },
+                { value: "dense", label: "36 Tasks" },
               ]}
-              onChange={onTaskDensityChange}
-              ariaLabel="任务数量"
+              onChange={(value) => onTaskDensityChange(value as StoryboardDensity)}
+              ariaLabel="分镜内容量"
             />
           </label>
           <Button onClick={onOpenOverlayLab}><Layers size={15} /> 浮层实验室</Button>

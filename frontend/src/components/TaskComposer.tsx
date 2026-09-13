@@ -15,9 +15,12 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Button, StatusPill } from "terry-react-ui-library";
 
-import type { ShotTask } from "../types";
+import type { GenerationTaskCardView } from "../types";
 import { Dialog, PortalSelect, useToast } from "../ui/overlay";
 import { PromptAssetEditor, type PromptAsset } from "./PromptAssetEditor";
+import { mockProjectAssets } from "../mock/assets";
+import { getMockGenerationProfile, mockGenerationProfiles } from "../mock/generationProfiles";
+import type { GenerationTask, TaskVisualBeat } from "../domain/storyboard";
 
 type SaveState = "saved" | "saving" | "error";
 
@@ -26,19 +29,60 @@ const initialIntent = "保持上一镜雨夜的冷色环境，但让门缝暖光
 const initialAiPrompt = "Cinematic medium close-up at a rain-soaked harbor warehouse. The young woman pauses beneath the eaves, wet hair against her cheek, listening to the faint mechanical rhythm behind the door. Cold cyan ambient light surrounds her while a narrow warm beam leaks through the rusty doorway. Slow controlled dolly-in, shallow depth of field, restrained natural movement. Maintain character, wardrobe, rain direction, and lens continuity from the previous shot.";
 const initialFinalPrompt = "Cinematic medium close-up at the rain-soaked warehouse entrance. She pauses under the eaves and turns slightly toward the warm light leaking through the door. Keep the previous shot's character, wardrobe, rain direction and 50mm lens continuity. Slow controlled dolly-in, shallow depth of field, restrained motion; no sudden camera acceleration.";
 
-const taskAssets: Array<PromptAsset & { type: string; icon: typeof FileImage }> = [
+const defaultTaskAssets: Array<PromptAsset & { type: string; icon: typeof FileImage; sourcePath?: string }> = [
   { id: "asset-character", name: "林澜 · 雨夜造型", type: "Character", kind: "subject", reference: "<Subject 1>", detail: "角色素材", icon: FileImage, tone: "amber" },
   { id: "asset-scene", name: "旧港口仓库外景", type: "Scene", kind: "picture", reference: "<Picture 1>", detail: "场景素材", icon: FileImage, tone: "blue" },
   { id: "asset-motion", name: "撑伞收伞动作参考", type: "Video", kind: "video", reference: "<Video 1>", detail: "动作参考", icon: Film, tone: "green" },
   { id: "asset-audio", name: "雨声与远处汽笛", type: "Audio", kind: "audio", reference: "<Audio 1>", detail: "声音参考", icon: Volume2, tone: "violet" },
 ];
 
-export function TaskComposer({ task, onClose }: { task: ShotTask; onClose: () => void }) {
-  const [scriptSource, setScriptSource] = useState(initialScript);
-  const [userIntent, setUserIntent] = useState(initialIntent);
-  const [aiPrompt, setAiPrompt] = useState(initialAiPrompt);
-  const [finalPrompt, setFinalPrompt] = useState(initialFinalPrompt);
-  const [generationProfile, setGenerationProfile] = useState("h3-ref2v");
+type TaskComposerPatch = Partial<Pick<GenerationTask,
+  "scriptSource" | "userIntent" | "aiPrompt" | "finalPrompt" | "visualBeats" | "generationProfileId" | "generationProfileLabel"
+>>;
+
+export function TaskComposer({
+  task,
+  onClose,
+  onTaskChange,
+}: {
+  task: GenerationTaskCardView;
+  onClose: () => void;
+  onTaskChange?: (patch: TaskComposerPatch) => void;
+}) {
+  const referenceCounts = { subject: 0, picture: 0, video: 0, audio: 0 };
+  const boundTaskAssets: Array<PromptAsset & { type: string; icon: typeof FileImage; sourcePath?: string }> = (task.assetBindings ?? []).flatMap((binding) => {
+    const asset = mockProjectAssets.find((item) => item.id === binding.assetId);
+    if (!asset) return [];
+    const kind: PromptAsset["kind"] = binding.role === "character"
+      ? "subject"
+      : asset.mediaType === "video"
+        ? "video"
+        : asset.mediaType === "audio"
+          ? "audio"
+          : "picture";
+    referenceCounts[kind] += 1;
+    const label = kind === "subject" ? "Subject" : kind[0].toUpperCase() + kind.slice(1);
+    const icon = kind === "video" ? Film : kind === "audio" ? Volume2 : FileImage;
+    return [{
+      id: asset.id,
+      name: asset.name,
+      type: `${asset.mediaType} · ${asset.category}`,
+      kind,
+      reference: `<${label} ${referenceCounts[kind]}>`,
+      detail: `${binding.role} · ${asset.projectRelativePath}`,
+      icon,
+      tone: kind === "subject" ? "amber" : kind === "video" ? "green" : kind === "audio" ? "violet" : "blue",
+      sourcePath: asset.projectRelativePath,
+    }];
+  });
+  const taskAssets = boundTaskAssets.length > 0 ? boundTaskAssets : defaultTaskAssets;
+  const [scriptSource, setScriptSource] = useState(task.scriptSource ?? initialScript);
+  const [userIntent, setUserIntent] = useState(task.userIntent ?? initialIntent);
+  const [aiPrompt, setAiPrompt] = useState(task.aiPrompt ?? initialAiPrompt);
+  const [finalPrompt, setFinalPrompt] = useState(task.finalPrompt ?? initialFinalPrompt);
+  const [generationProfile, setGenerationProfile] = useState(task.generationProfileId ?? "profile-h3-multi-shot");
+  const [visualBeats, setVisualBeats] = useState<TaskVisualBeat[]>(task.visualBeats?.map((beat) => ({ ...beat })) ?? []);
+  const [selectedBeatId, setSelectedBeatId] = useState(task.visualBeats?.[0]?.id ?? "");
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [promptGenerating, setPromptGenerating] = useState(false);
   const [revision, setRevision] = useState(2);
@@ -48,6 +92,16 @@ export function TaskComposer({ task, onClose }: { task: ShotTask; onClose: () =>
   const saveTimer = useRef<number | null>(null);
   const promptTimer = useRef<number | null>(null);
   const pushToast = useToast();
+  const beatSequence = useRef(visualBeats.length);
+  const selectedBeat = visualBeats.find((beat) => beat.id === selectedBeatId);
+  const profile = getMockGenerationProfile(generationProfile);
+  const plannedDuration = Number.parseFloat(task.plannedDurationLabel) || 0;
+  const capabilityWarnings = [
+    visualBeats.length > 1 && !profile.capability.multiShotPrompt ? "当前 Profile 不支持多镜头提示词。" : "",
+    profile.capability.maxDurationSeconds && plannedDuration > profile.capability.maxDurationSeconds
+      ? `Task 计划时长超过 Profile 上限 ${profile.capability.maxDurationSeconds}s。`
+      : "",
+  ].filter(Boolean);
 
   useEffect(() => {
     const remoteTimer = window.setTimeout(() => setRemoteProgress((progress) => Math.min(99, progress + 4)), 650);
@@ -65,8 +119,9 @@ export function TaskComposer({ task, onClose }: { task: ShotTask; onClose: () =>
     saveTimer.current = window.setTimeout(() => setSaveState("saved"), 420);
   };
 
-  const updateField = (setter: (value: string) => void, value: string) => {
+  const updateField = (setter: (value: string) => void, value: string, patch?: TaskComposerPatch) => {
     setter(value);
+    if (patch) onTaskChange?.(patch);
     scheduleSave();
   };
 
@@ -76,7 +131,9 @@ export function TaskComposer({ task, onClose }: { task: ShotTask; onClose: () =>
     promptTimer.current = window.setTimeout(() => {
       const nextRevision = revision + 1;
       setRevision(nextRevision);
-      setAiPrompt(`${initialAiPrompt} Preserve the hand reaching toward the handle as the final beat. [AI revision ${nextRevision}]`);
+      const nextPrompt = `${initialAiPrompt} Preserve the hand reaching toward the handle as the final beat. [AI revision ${nextRevision}]`;
+      setAiPrompt(nextPrompt);
+      onTaskChange?.({ aiPrompt: nextPrompt });
       setPromptGenerating(false);
       pushToast("新的 AI Prompt 已生成，Final Prompt 保持不变", "success");
     }, 360);
@@ -84,9 +141,45 @@ export function TaskComposer({ task, onClose }: { task: ShotTask; onClose: () =>
 
   const replaceFinalPrompt = () => {
     setFinalPrompt(aiPrompt);
+    onTaskChange?.({ finalPrompt: aiPrompt });
     setReplaceConfirmOpen(false);
     scheduleSave();
     pushToast("已用当前 AI Prompt 替换 Final Prompt", "success");
+  };
+
+  const updateVisualBeats = (next: TaskVisualBeat[]) => {
+    setVisualBeats(next);
+    onTaskChange?.({ visualBeats: next });
+    scheduleSave();
+  };
+
+  const patchSelectedBeat = (patch: Partial<TaskVisualBeat>) => {
+    if (!selectedBeat) return;
+    updateVisualBeats(visualBeats.map((beat) => beat.id === selectedBeat.id ? { ...beat, ...patch } : beat));
+  };
+
+  const addVisualBeat = () => {
+    beatSequence.current += 1;
+    const id = `${task.id}-beat-local-${beatSequence.current}`;
+    const previousEnd = visualBeats.at(-1)?.plannedEnd ?? plannedDuration;
+    const beat: TaskVisualBeat = {
+      id,
+      label: `Beat ${visualBeats.length + 1}`,
+      description: "等待补充镜头描述。",
+      plannedStart: previousEnd,
+      plannedEnd: previousEnd + 3,
+    };
+    updateVisualBeats([...visualBeats, beat]);
+    setSelectedBeatId(id);
+  };
+
+  const moveSelectedBeat = (delta: number) => {
+    const index = visualBeats.findIndex((beat) => beat.id === selectedBeatId);
+    const target = index + delta;
+    if (index < 0 || target < 0 || target >= visualBeats.length) return;
+    const next = [...visualBeats];
+    [next[index], next[target]] = [next[target], next[index]];
+    updateVisualBeats(next);
   };
 
   return (
@@ -105,6 +198,38 @@ export function TaskComposer({ task, onClose }: { task: ShotTask; onClose: () =>
         </div>
       </header>
 
+      <section className="composer-beat-strip" aria-label="Task Visual Beats">
+        <header>
+          <div><span className="eyebrow">TASK INTERNAL STRUCTURE</span><strong>Visual Beat Strip</strong></div>
+          <small>{visualBeats.length > 1 ? `多镜头 Task · ${visualBeats.length} Beats` : visualBeats.length === 1 ? "单镜头 Task" : "镜头描述待规划"}</small>
+        </header>
+        <div className="composer-beat-tabs" role="tablist" aria-label="Visual Beats">
+          {visualBeats.map((beat, index) => (
+            <button key={beat.id} type="button" role="tab" aria-selected={beat.id === selectedBeatId} onClick={() => setSelectedBeatId(beat.id)}>
+              <span>{index + 1}</span><strong>{beat.label}</strong><small>{beat.plannedStart ?? "—"}-{beat.plannedEnd ?? "—"}s</small>
+            </button>
+          ))}
+          <button type="button" className="composer-add-beat" onClick={addVisualBeat}>+ 添加 Beat</button>
+        </div>
+        {selectedBeat && (
+          <div className="composer-beat-editor">
+            <label><span>Beat Label</span><input aria-label="Beat Label" value={selectedBeat.label} onChange={(event) => patchSelectedBeat({ label: event.target.value })} /></label>
+            <label><span>镜头描述</span><textarea aria-label="Beat Description" rows={2} value={selectedBeat.description} onChange={(event) => patchSelectedBeat({ description: event.target.value })} /></label>
+            <div>
+              <button type="button" onClick={() => moveSelectedBeat(-1)}>向前移动</button>
+              <button type="button" onClick={() => moveSelectedBeat(1)}>向后移动</button>
+              <button type="button" onClick={() => {
+                const index = visualBeats.findIndex((beat) => beat.id === selectedBeat.id);
+                const next = visualBeats.filter((beat) => beat.id !== selectedBeat.id);
+                updateVisualBeats(next);
+                setSelectedBeatId(next[Math.min(index, next.length - 1)]?.id ?? "");
+              }}>删除 Beat</button>
+            </div>
+          </div>
+        )}
+        {capabilityWarnings.length > 0 && <div className="composer-capability-warning" role="alert">{capabilityWarnings.map((warning) => <span key={warning}>{warning}</span>)}</div>}
+      </section>
+
       <div className="composer-columns">
         <section className="composer-column script-column" aria-label="剧本与设置">
           <header><span>01</span><div><strong>剧本 / 设置</strong><small>创作输入与生成约束</small></div></header>
@@ -112,7 +237,7 @@ export function TaskComposer({ task, onClose }: { task: ShotTask; onClose: () =>
             <span><strong>Script Source</strong><small>原始剧本</small></span>
             <textarea
               value={scriptSource}
-              onChange={(event) => updateField(setScriptSource, event.target.value)}
+              onChange={(event) => updateField(setScriptSource, event.target.value, { scriptSource: event.target.value })}
               aria-label="Script Source"
               rows={7}
             />
@@ -121,7 +246,7 @@ export function TaskComposer({ task, onClose }: { task: ShotTask; onClose: () =>
             <span><strong>User Intent</strong><small>镜头创作意图</small></span>
             <textarea
               value={userIntent}
-              onChange={(event) => updateField(setUserIntent, event.target.value)}
+              onChange={(event) => updateField(setUserIntent, event.target.value, { userIntent: event.target.value })}
               aria-label="User Intent"
               rows={5}
             />
@@ -130,13 +255,14 @@ export function TaskComposer({ task, onClose }: { task: ShotTask; onClose: () =>
             <span><strong>Generation Profile</strong><small>继承自项目默认设置</small></span>
             <PortalSelect
               value={generationProfile}
-              onChange={(value) => { setGenerationProfile(value); scheduleSave(); }}
+              onChange={(value) => {
+                const nextProfile = getMockGenerationProfile(value);
+                setGenerationProfile(value);
+                onTaskChange?.({ generationProfileId: nextProfile.id, generationProfileLabel: nextProfile.label });
+                scheduleSave();
+              }}
               ariaLabel="Generation Profile"
-              options={[
-                { value: "h3-ref2v", label: "MiniMax-H3 · Ref2V", detail: "16:9 · 1080p · 6s" },
-                { value: "h3-fast", label: "MiniMax-H3 · Fast Preview", detail: "16:9 · 720p · 4s" },
-                { value: "fake-video", label: "Fake Video Provider", detail: "可预测测试输出" },
-              ]}
+              options={mockGenerationProfiles.map((item) => ({ value: item.id, label: item.label, detail: item.detail }))}
             />
           </div>
           <section className="composer-context">
@@ -168,7 +294,7 @@ export function TaskComposer({ task, onClose }: { task: ShotTask; onClose: () =>
             </div>
             <PromptAssetEditor
               value={finalPrompt}
-              onChange={(value) => updateField(setFinalPrompt, value)}
+              onChange={(value) => updateField(setFinalPrompt, value, { finalPrompt: value })}
               assets={taskAssets}
               ariaLabel="Final Prompt"
               rows={10}
@@ -190,19 +316,19 @@ export function TaskComposer({ task, onClose }: { task: ShotTask; onClose: () =>
           <header><span>03</span><div><strong>项目资产</strong><small>当前任务已选择 {taskAssets.length} 项</small></div></header>
           <button type="button" className="asset-picker-entry">管理当前选择 <ChevronRight size={15} /></button>
           <div className="composer-assets">
-            {taskAssets.map(({ id, name, type, icon: Icon, tone }) => (
+            {taskAssets.map(({ id, name, type, icon: Icon, tone, sourcePath }) => (
               <article key={id} className="composer-asset-card">
                 <div className={`asset-thumb tone-${tone}`}><Icon size={21} /><span>{type}</span></div>
-                <div><strong title={name}>{name}</strong><small>{type} · 已绑定</small></div>
+                <div><strong title={name}>{name}</strong><small title={sourcePath}>{type} · 已绑定</small></div>
                 <Check size={14} />
               </article>
             ))}
           </div>
           <section className="asset-usage-summary">
             <span className="eyebrow">REFERENCE MAP</span>
-            <div><span>Subject</span><strong>林澜 · 雨夜造型</strong></div>
-            <div><span>Picture</span><strong>旧港口仓库外景</strong></div>
-            <div><span>Audio</span><strong>雨声与远处汽笛</strong></div>
+            {taskAssets.map((asset) => (
+              <div key={asset.id}><span>{asset.reference}</span><strong title={asset.detail}>{asset.name}</strong></div>
+            ))}
           </section>
           <section className="remote-update-card" data-testid="remote-progress">
             <div><span className="status-dot is-online" /><strong>后台状态已同步</strong></div>

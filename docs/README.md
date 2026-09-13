@@ -7,11 +7,11 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。Codex
 - [开发记录](./DEVELOPMENT_LOG.md)  
   已实际完成的功能、验证结果、当前边界与下一步建议；最新记录置顶。
 
-- [Storyboard / Generation Task 数据模型](./STORYBOARD_TASK_MODEL.md)  
-  **Storyboard 阶段的核心领域模型。** 明确 `Shot != Task`，Generation Task 可覆盖多个 Shot，Story Order、Generation Grouping、Generation Context 三层独立，并定义 TaskShotBinding 与 ResultShotSpan。涉及 Storyboard / Task / Result / Context 的开发必须先读本文。
+- [Storyboard-style Task Workspace 数据模型](./STORYBOARD_TASK_MODEL.md)
+  **Storyboard 阶段的核心领域模型。** 明确 `1 Storyboard Card = 1 GenerationTask`；Storyboard 是分镜式 Task 交互，不是独立 Shot 工具；一个 Task 可在内部描述多个镜头 / 视觉节拍。涉及 Storyboard / Task / Result / Context 的开发必须先读本文。
 
-- [V0.2 Storyboard 开发任务](./V0.2_STORYBOARD_DEVELOPMENT_TASKS.md)  
-  **当前下一阶段的主执行清单。** 目标是完整 Storyboard Workspace，并支持多个 Storyboard Shot 组合为一次 Generation Task、Task Band / Grouping、Multi-shot Prompt Composer、Result → 多 Shot 映射与 Story Reel。
+- [V0.2 Storyboard-style Task Workspace 开发任务](./V0.2_STORYBOARD_DEVELOPMENT_TASKS.md)
+  **已完成 V0.2 Freeze 的主执行清单与后续回归基线。** 以画面化 Task Cards 完成故事排序、Multi-shot Prompt Composer、Result Review、Context 与 Story Reel；不建立 Shot Card + Task Band 双层主界面。
 
 - [V0.1 第一版开发任务](./V0.1_DEVELOPMENT_TASKS.md)  
   第一版基础工程、`/dev/ui`、Task Composer、Provider / Core 等总体开发清单；V0.2 在其 UI 原型基础上继续演进。早期将 Task / Shot 并列表述的部分不得用于推导一一对应关系。
@@ -46,16 +46,16 @@ Playwright / Visual Regression 固化
 Storyboard 阶段必须先确认：
 
 ```text
-Story Order
-Generation Grouping
-Generation Context
+1 Card = 1 GenerationTask
+Task 内可有 1..N Visual Beats
+Story Order 与 Generation Context 独立
 ```
 
-三层关系没有被混写，再开始复杂 UI。
+上述关系没有被混写，再开始复杂 UI。
 
 基础交互尚未在 `/dev/ui` 中稳定前，不应把大量真实后端逻辑绑死到 UI 组件。
 
-当前 Storyboard 阶段优先按 `V0.2_STORYBOARD_DEVELOPMENT_TASKS.md` 推进；Scene / Shot、Task Grouping、Continuity、Result Mapping 先通过 Mock Repository 验证，再进入真实 Core / SQLite / Provider 接入。
+当前 Storyboard 阶段优先按 `V0.2_STORYBOARD_DEVELOPMENT_TASKS.md` 推进；Scene、Task Cards、Story Order、Context 与 Result 先通过 Mock Repository 验证，再进入真实 Core / SQLite / Provider 接入。
 
 用户主要负责可见的视觉、信息密度与操作“手感”；后端、Provider、Scheduler、数据库、恢复逻辑等不可见部分主要通过测试策略和 Codex 闭环开发验证。
 

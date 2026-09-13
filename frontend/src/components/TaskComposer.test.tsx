@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { vi } from "vitest";
 
 import { OverlayProvider } from "../ui/overlay";
 import { TaskComposer } from "./TaskComposer";
@@ -9,9 +10,10 @@ const task = {
   number: "S01-002",
   title: "仓库门前的短暂停顿",
   summary: "测试任务",
-  status: "running" as const,
-  assets: 4,
-  duration: "6s",
+  state: "running" as const,
+  assetCount: 4,
+  plannedDurationLabel: "6s",
+  visualBeatCount: 1,
   progress: 43,
 };
 
@@ -112,5 +114,46 @@ describe("Task Composer", () => {
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("listbox", { name: "引用任务资产" })).not.toBeInTheDocument();
     expect(finalPrompt).toHaveValue("<Picture 1> @");
+  });
+
+  it("edits a multi-shot Task through its internal Visual Beat Strip", async () => {
+    const user = userEvent.setup();
+    const onTaskChange = vi.fn();
+    render(
+      <OverlayProvider>
+        <TaskComposer
+          task={{
+            ...task,
+            plannedDurationLabel: "15s",
+            visualBeatCount: 3,
+            generationProfileId: "profile-h3-multi-shot",
+            visualBeats: [
+              { id: "beat-1", label: "建立", description: "仓库外景", plannedStart: 0, plannedEnd: 4 },
+              { id: "beat-2", label: "靠近", description: "靠近人物", plannedStart: 4, plannedEnd: 9 },
+              { id: "beat-3", label: "推门", description: "推门收束", plannedStart: 9, plannedEnd: 15 },
+            ],
+          }}
+          onClose={() => undefined}
+          onTaskChange={onTaskChange}
+        />
+      </OverlayProvider>,
+    );
+
+    expect(screen.getAllByRole("tab")).toHaveLength(3);
+    await user.click(screen.getByRole("tab", { name: /靠近/ }));
+    await user.clear(screen.getByRole("textbox", { name: "Beat Description" }));
+    await user.type(screen.getByRole("textbox", { name: "Beat Description" }), "贴近人物侧脸");
+    expect(onTaskChange).toHaveBeenLastCalledWith(expect.objectContaining({
+      visualBeats: expect.arrayContaining([expect.objectContaining({ id: "beat-2", description: "贴近人物侧脸" })]),
+    }));
+
+    await user.click(screen.getByRole("button", { name: "+ 添加 Beat" }));
+    expect(screen.getAllByRole("tab")).toHaveLength(4);
+    await user.click(screen.getByRole("button", { name: "删除 Beat" }));
+    expect(screen.getAllByRole("tab")).toHaveLength(3);
+
+    await user.click(screen.getByRole("button", { name: "Generation Profile" }));
+    await user.click(screen.getByRole("option", { name: /H3 · Fast Preview/ }));
+    expect(screen.getByRole("alert")).toHaveTextContent("当前 Profile 不支持多镜头提示词");
   });
 });

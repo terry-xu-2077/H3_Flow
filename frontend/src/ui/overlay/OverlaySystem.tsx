@@ -41,6 +41,7 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
   const stack = useRef<OverlayRegistration[]>([]);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const toastSequence = useRef(0);
+  const toastTimers = useRef<Set<number>>(new Set());
 
   const register = useCallback((registration: OverlayRegistration) => {
     stack.current = [...stack.current.filter((item) => item.id !== registration.id), registration];
@@ -52,9 +53,16 @@ export function OverlayProvider({ children }: { children: ReactNode }) {
   const pushToast = useCallback((message: string, tone: ToastItem["tone"] = "normal") => {
     const id = ++toastSequence.current;
     setToasts((current) => [...current, { id, message, tone }]);
-    window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
+      toastTimers.current.delete(timer);
       setToasts((current) => current.filter((toast) => toast.id !== id));
     }, 2600);
+    toastTimers.current.add(timer);
+  }, []);
+
+  useEffect(() => () => {
+    toastTimers.current.forEach((timer) => window.clearTimeout(timer));
+    toastTimers.current.clear();
   }, []);
 
   useEffect(() => {

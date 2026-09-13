@@ -20,6 +20,7 @@ try {
   const composerDesktop = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   await composerDesktop.goto(baseUrl);
   await composerDesktop.getByRole("button", { name: "收起场景" }).click();
+  await composerDesktop.getByRole("button", { name: "生产", exact: true }).click();
   await composerDesktop.getByTestId("task-card-task-002").dblclick();
   await composerDesktop.getByTestId("task-composer").waitFor();
   await composerDesktop.waitForTimeout(700);
@@ -32,7 +33,9 @@ try {
 
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await mobile.goto(baseUrl);
+  await mobile.evaluate(() => window.scrollTo(0, 0));
   await mobile.screenshot({ path: resolve(outputDirectory, "dev-ui-mobile.png") });
+  await mobile.getByRole("button", { name: "生产", exact: true }).click();
   await mobile.getByTestId("task-card-task-002").dblclick();
   await mobile.getByTestId("task-composer").waitFor();
   await mobile.waitForTimeout(700);

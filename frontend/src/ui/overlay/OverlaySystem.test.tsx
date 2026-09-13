@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { vi } from "vitest";
 
-import { Dialog, OverlayProvider, PortalSelect } from ".";
+import { Dialog, OverlayProvider, PortalSelect, useToast } from ".";
 
 function Harness() {
   const [dialogOpen, setDialogOpen] = useState(true);
@@ -23,6 +24,11 @@ function Harness() {
       </Dialog>
     </OverlayProvider>
   );
+}
+
+function ToastTrigger() {
+  const pushToast = useToast();
+  return <button type="button" onClick={() => pushToast("延迟关闭通知")}>触发通知</button>;
 }
 
 describe("Overlay system", () => {
@@ -48,5 +54,19 @@ describe("Overlay system", () => {
 
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog", { name: "嵌套浮层" })).not.toBeInTheDocument();
+  });
+
+  it("clears pending toast timers when the provider unmounts", () => {
+    vi.useFakeTimers();
+    const clearTimeout = vi.spyOn(window, "clearTimeout");
+    const view = render(<OverlayProvider><ToastTrigger /></OverlayProvider>);
+
+    fireEvent.click(screen.getByRole("button", { name: "触发通知" }));
+    view.unmount();
+
+    expect(clearTimeout).toHaveBeenCalled();
+    vi.runOnlyPendingTimers();
+    clearTimeout.mockRestore();
+    vi.useRealTimers();
   });
 });

@@ -1,9 +1,9 @@
-import { Check, Clock3, ImageOff, Layers3, TriangleAlert } from "lucide-react";
+import { Check, Clock3, ImageOff, Layers3, Rows3, TriangleAlert } from "lucide-react";
 import { StatusPill } from "terry-react-ui-library";
 
-import type { ShotTask, TaskStatus } from "../types";
+import type { GenerationTaskCardView, GenerationTaskState } from "../types";
 
-const statusLabels: Record<TaskStatus, string> = {
+const statusLabels: Record<GenerationTaskState, string> = {
   draft: "草稿",
   "prompt-generating": "生成 Prompt",
   "prompt-ready": "Prompt 就绪",
@@ -12,11 +12,12 @@ const statusLabels: Record<TaskStatus, string> = {
   running: "生成中",
   completed: "已完成",
   failed: "失败",
+  cancelled: "已取消",
   blocked: "等待上游",
   "context-stale": "上下文已过期",
 };
 
-const statusTones: Record<TaskStatus, "normal" | "active" | "warning" | "danger"> = {
+const statusTones: Record<GenerationTaskState, "normal" | "active" | "warning" | "danger"> = {
   draft: "normal",
   "prompt-generating": "active",
   "prompt-ready": "active",
@@ -25,21 +26,22 @@ const statusTones: Record<TaskStatus, "normal" | "active" | "warning" | "danger"
   running: "active",
   completed: "normal",
   failed: "danger",
+  cancelled: "normal",
   blocked: "warning",
   "context-stale": "warning",
 };
 
 type TaskCardProps = {
-  task: ShotTask;
+  task: GenerationTaskCardView;
   selected: boolean;
-  onSelect: (task: ShotTask, event: React.MouseEvent) => void;
-  onOpen: (task: ShotTask) => void;
+  onSelect: (task: GenerationTaskCardView, event: React.MouseEvent) => void;
+  onOpen: (task: GenerationTaskCardView) => void;
 };
 
 export function TaskCard({ task, selected, onSelect, onOpen }: TaskCardProps) {
   return (
     <article
-      className={`task-card status-${task.status} ${selected ? "is-selected" : ""}`}
+      className={`task-card status-${task.state} ${selected ? "is-selected" : ""}`}
       onClick={(event) => onSelect(task, event)}
       onDoubleClick={() => onOpen(task)}
       onKeyDown={(event) => {
@@ -51,26 +53,27 @@ export function TaskCard({ task, selected, onSelect, onOpen }: TaskCardProps) {
       aria-label={`${task.number} ${task.title}`}
     >
       <div className="task-preview" aria-label="任务预览">
-        {task.assets === 0 ? <ImageOff size={28} /> : <div className="preview-haze" />}
+        {task.assetCount === 0 ? <ImageOff size={28} /> : <div className="preview-haze" />}
         <span className="task-number">{task.number}</span>
-        {task.status === "completed" && <span className="preview-result"><Check size={13} /> Result 02</span>}
+        {task.state === "completed" && <span className="preview-result"><Check size={13} /> Result 02</span>}
       </div>
       <div className="task-content">
         <div className="task-heading">
           <h3 title={task.title}>{task.title}</h3>
-          <StatusPill tone={statusTones[task.status]}>{statusLabels[task.status]}</StatusPill>
+          <StatusPill tone={statusTones[task.state]}>{statusLabels[task.state]}</StatusPill>
         </div>
         <p>{task.summary}</p>
-        {task.status === "running" && (
+        {task.state === "running" && (
           <div className="task-progress" aria-label={`生成进度 ${task.progress}%`}>
             <div style={{ width: `${task.progress}%` }} />
             <span>{task.progress}%</span>
           </div>
         )}
         <footer>
-          <span><Layers3 size={14} /> {task.assets} 个资产</span>
-          <span><Clock3 size={14} /> {task.duration}</span>
-          {task.status === "failed" && <span className="task-warning"><TriangleAlert size={14} /> 可重试</span>}
+          <span><Rows3 size={14} /> {task.visualBeatCount > 1 ? `${task.visualBeatCount} 个视觉节拍` : task.visualBeatCount === 1 ? "单镜头" : "待规划"}</span>
+          <span><Layers3 size={14} /> {task.assetCount} 个资产</span>
+          <span><Clock3 size={14} /> {task.plannedDurationLabel}</span>
+          {task.state === "failed" && <span className="task-warning"><TriangleAlert size={14} /> 可重试</span>}
         </footer>
       </div>
     </article>

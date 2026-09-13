@@ -1,274 +1,231 @@
-# ShotMill Storyboard / Generation Task 数据模型
+# ShotMill Storyboard-style Task Workspace 数据模型
 
 > 状态：架构基线  
 > 最后更新：2026-09-12  
-> 优先级：本文用于纠正早期文档中可能出现的 `Task / Shot` 一一对应表述；涉及 Storyboard、Task、Job、Result、Context 时以本文为准。
+> 决策来源：Storyboard 在 ShotMill 中是一种分镜式交互方式，不是独立分镜制作工具。
+
+本文用于约束 V0.2 的 Task、Job、Result、Context 与 Storyboard-style UI。涉及这些对象时以本文为准。
 
 ---
 
 ## 1. 核心结论
 
-**Storyboard Shot 与 Generation Task 不是同一个对象，也不是固定一一对应。**
+**Storyboard 中每一张可操作卡片都是一个 `GenerationTask`。**
 
-MiniMax-H3 当前工作方式允许一次最长约 15 秒的生成任务在 Prompt 中描述多个分镜，因此可能出现：
+这里的 Storyboard 指按故事顺序排列画面化 Task 卡片的交互方式，不表示系统必须建立一套独立的 Shot 实体、Shot Card 和 Task Band。
 
-```text
-Storyboard Order
-Shot 001 → Shot 002 → Shot 003 → Shot 004 → Shot 005
+一张 Task Card 可以表达：
 
-Generation Grouping
-Task A = Shot 001 + Shot 002 + Shot 003
-Task B = Shot 004 + Shot 005
-```
+- 单一镜头意图；
+- 同一段生成视频里的多个镜头 / 多个视觉节拍；
+- 一个长镜头或 continuation 任务；
+- 尚未完成拆镜描述的草稿任务。
 
-同时，为了兼容长镜头续接、不同 Provider 的时长限制和未来工作流，底层也不能假设一个 Shot 永远只由一个 Task 生成。
-
-因此 ShotMill 必须把以下三层关系严格分离：
+因此严禁重新引入以下假设：
 
 ```text
-1. Story Order
-2. Generation Grouping
-3. Generation Context
+1 Storyboard Card = 1 Shot = 1 Generation Task
 ```
+
+正确表达是：
+
+```text
+1 Storyboard Card = 1 Generation Task
+1 Generation Task = 1..N 个可选的视觉节拍描述
+1 Generation Task submission = 1 immutable Job
+1 Job = 0..N immutable Results
+```
+
+视觉节拍只是 Task 内部用于组织 Prompt 的描述，不是 V0.2 必须独立持久化、独立排队或独立显示为卡片的生产对象。
 
 ---
 
-## 2. 三层关系
+## 2. 三种关系必须独立
 
 ### 2.1 Story Order
 
-表示叙事 / 分镜顺序：
+表示 Task Card 在 Scene 中的叙事顺序：
 
 ```text
-Scene 01
-  Shot 001
-  Shot 002
-  Shot 003
-  Shot 004
+Task A → Task B → Task C
 ```
 
-它回答：
+通过 `TaskStoryboardPlacement` 表达，不使用 Context Link 充当排序关系。
 
-> 观众按什么顺序看到这些分镜？
+### 2.2 Task Content
 
-Story Order 属于 Storyboard，不属于生成任务。
-
----
-
-### 2.2 Generation Grouping
-
-表示哪些 Storyboard Shot 被编译到同一次视频生成 Task 中：
+表示一次 Provider 调用要生成的完整内容。Task 内部可以有一个或多个 `TaskVisualBeat`：
 
 ```text
 Task A
-├─ Shot 001
-├─ Shot 002
-└─ Shot 003
-
-Task B
-├─ Shot 004
-└─ Shot 005
+├─ Beat 1 · 0-4s · 远景建立雨夜码头
+├─ Beat 2 · 4-9s · 中近景人物停在门前
+└─ Beat 3 · 9-15s · 特写推门
 ```
 
-它回答：
-
-> 这次 Provider 调用要一次生成 Storyboard 中的哪些内容？
-
-Generation Grouping 由以下因素共同决定：
-
-- Generation Profile 的最大时长。
-- Provider / Model 是否支持 Prompt 内多镜头。
-- Shot planned duration。
-- 场景 / 角色连续性。
-- 用户手工分组。
-- Prompt AI 的建议。
-
-MiniMax-H3 Profile 当前应声明支持单 Task 多 Shot，并由 Profile / Capability 表达最大时长约束；**Core 不得写死 15 秒。**
-
----
+`TaskVisualBeat` 不拥有 Queue / Running / Result 等独立生命周期。
 
 ### 2.3 Generation Context
 
-表示 Task 与 Task 之间的生成依赖：
+表示 Task 之间的生成依赖与续接关系：
 
 ```text
-Task A ── Visual / Audio / Latent / Semantic Context ──> Task B
+Task A ── Visual / Audio / Latent / Semantic ──> Task B
 ```
 
-它回答：
-
-> Task B 生成时从哪个已生成 Task / Result 续接？
-
-Generation Context 默认定义在 Task 边界，而不是简单定义在相邻 Shot 边界。
-
-Storyboard 的 Previous / Next Shot 仍然可以作为 Prompt AI 的 Semantic Context，但不等于 Provider 的 Generation Context。
+移动 Task Card 只改变 Story Order，不得静默改写 Generation Context。
 
 ---
 
 ## 3. 推荐领域对象
 
-### 3.1 StoryboardShot
+### 3.1 Scene
 
 ```text
-StoryboardShot
+Scene
 ├─ id
-├─ scene_id
-├─ order_key
 ├─ number                 # 展示编号，可重算
 ├─ title
-├─ script_source
-├─ source_range
-├─ user_intent
-├─ story_beat
-├─ shot_size
-├─ camera_movement
-├─ planned_duration
-├─ storyboard_frame
-├─ asset_bindings
-└─ continuity_notes
+├─ summary
+├─ order_key
+├─ location
+├─ time_of_day
+└─ notes
 ```
 
-StoryboardShot 是创作单位。
+Scene 是 Storyboard-style 工作台面的分区，可为空、折叠、排序。
 
-它本身不保存唯一 `task_id`。
+### 3.2 TaskStoryboardPlacement
 
----
+```text
+TaskStoryboardPlacement
+├─ task_id
+├─ scene_id
+└─ order_key
+```
 
-### 3.2 GenerationTask
+它只表达当前工作区中的位置。Task ID 稳定，展示编号可根据位置重算。
+
+### 3.3 TaskVisualBeat
+
+```text
+TaskVisualBeat
+├─ id
+├─ label
+├─ description
+├─ planned_start?
+├─ planned_end?
+├─ shot_size?
+├─ camera_movement?
+└─ notes?
+```
+
+它是 Task 内可选的 Prompt 结构化信息：
+
+- 单镜头 Task 可以不创建或只创建一个 Beat；
+- 多镜头 Task 可以创建多个 Beat；
+- Beat 不出现在一级导航、任务队列或独立卡片列表中；
+- Beat 不保存唯一 `task_id`，因为它直接隶属于当前 Task 内容；
+- V0.2 不提供完整分镜工具级的 Shot 管理能力。
+
+### 3.4 GenerationTask
 
 ```text
 GenerationTask
 ├─ id
 ├─ number
 ├─ title
+├─ summary
+├─ script_source
+├─ user_intent
+├─ storyboard_frame
+├─ visual_beats[]
+├─ asset_bindings[]
 ├─ generation_profile_id
-├─ task_shot_bindings[]
-├─ asset_bindings / resolved_assets
 ├─ ai_prompt
 ├─ final_prompt
-├─ prompt_revisions
+├─ prompt_revisions[]
 ├─ generation_params
-├─ context_links
+├─ context_link_ids[]
 ├─ state
-├─ jobs[]
-└─ primary_result_id
+├─ job_ids[]
+└─ primary_result_id?
 ```
 
-GenerationTask 是一次可编辑的生成生产单。
+GenerationTask 同时是：
 
-一个 Task 可以覆盖一个或多个 Storyboard Shot。
+- Storyboard 中的可视卡片对象；
+- Task Composer 的编辑对象；
+- Ready / Queue / Running / Failed 的状态载体；
+- Provider 提交前的可变生产意图。
 
----
-
-### 3.3 TaskShotBinding
-
-不要在 Shot 上放固定 `task_id`，使用独立关联对象：
+### 3.5 StoryboardFrame
 
 ```text
-TaskShotBinding
+StoryboardFrame
+├─ source_type            # placeholder / imported-image / asset / video-frame / result-frame
+├─ source_id?
+├─ preview_url?
+├─ frame_time?
+└─ updated_at
+```
+
+它是 Task Card 的封面或代表帧，不意味着这张卡只生成一个镜头。
+
+### 3.6 GenerationContextLink
+
+```text
+GenerationContextLink
 ├─ id
-├─ task_id
-├─ shot_id
-├─ order_in_task
-├─ coverage
-│  ├─ full
-│  └─ partial
-├─ planned_start          # 可选，用于 Prompt / Preview，不是 NLE 时间线
-├─ planned_end            # 可选
-└─ notes
+├─ source_task_id
+├─ target_task_id
+├─ kind                   # semantic / visual / audio / latent / native / fallback
+├─ source_result_id?
+└─ stale
 ```
 
-这样允许：
+Context 默认定义在 Task 边界。
 
-```text
-1 Task → N Shots
-```
+### 3.7 Job
 
-也为未来以下情况留出空间：
-
-```text
-1 Shot → N Tasks
-```
-
-例如：一个连续长镜头超过当前 Generation Profile 单次最大时长，需要通过多个连续 Task 生成。
-
-V0.2 UI 可以优先优化最常见的“连续多个 Shot 合并成一个 Task”，但 Domain Contract 不得把关系限制为一对一。
-
----
-
-### 3.4 Job
-
-Job 仍然是某次提交的不可变快照：
+Job 是 Task 每次提交时形成的不可变执行快照，至少保存：
 
 ```text
 Job
+├─ id
 ├─ task_id
-├─ task_shot_bindings_snapshot
+├─ task_content_snapshot
 ├─ final_prompt_snapshot
 ├─ assets_snapshot
 ├─ generation_profile_snapshot
 ├─ params_snapshot
 ├─ context_snapshot
-└─ ...
+└─ created_at
 ```
 
-即使 Storyboard 之后重新排序、Shot 重新分组，也不能改变历史 Job。
+Task 后续修改、重排或增加视觉节拍，不得改变历史 Job。
 
----
-
-### 3.5 Result 与 ResultShotSpan
-
-一个 Result 对应一次 Job 的输出视频，因此一个 Result 可能包含多个 Storyboard Shot。
-
-不要假设：
-
-```text
-1 Result = 1 Shot
-```
-
-建议：
+### 3.8 Result
 
 ```text
 Result
 ├─ id
 ├─ job_id
-├─ video
-├─ preview
+├─ video_url
+├─ preview_url?
 ├─ metadata
-├─ review_state
-└─ shot_spans[]
-
-ResultShotSpan
-├─ result_id
-├─ shot_id
-├─ start_time             # 可为空 / 可估计
-├─ end_time               # 可为空 / 可估计
-├─ representative_frame   # 可选
-└─ confidence / source    # manual / prompt-plan / detected 等，可选
+└─ review_state
 ```
 
-V0.2 Mock 阶段不要求精确自动检测实际切镜点，但 Contract 必须允许把一个多镜头生成结果映射回多个 Storyboard Shot。
+Result 属于 Job。一个多镜头 Task 的 Result 仍是一份完整生成结果，不需要为了迎合卡片布局被复制成多个 Shot Result。
+
+如果未来需要镜头级回看，可以在 Result metadata 中增加可选时间提示；它不构成 V0.2 Storyboard Card 的身份基础。
 
 ---
 
-## 4. 状态归属必须分开
+## 4. 状态归属
 
-### Shot 状态
-
-Storyboard Shot 主要表达创作准备状态，例如：
-
-```text
-Draft
-Storyboard Ready
-Needs Assets
-Needs Continuity Review
-Covered by Task
-Unassigned
-```
-
-### Task 状态
-
-生成状态属于 Generation Task：
+以下状态全部属于 GenerationTask：
 
 ```text
 Draft
@@ -283,191 +240,91 @@ Blocked
 Context Stale
 ```
 
-因此 UI 不应把 `Running 43%` 直接当作某个 Shot 的唯一状态。
+`TaskVisualBeat` 不拥有独立运行状态。
 
-如果一个 Task 覆盖三个 Shot，三个 Shot 可以显示同一个 Task 的生产徽标，但真实运行状态仍归 Task。
+`Job` 与 `Result` 是历史记录，不复用 Task 的可变状态字段。
 
 ---
 
-## 5. Ready 与 Queue
+## 5. Capability Driven
 
-Ready Validation 针对 Generation Task，而不是单个 Storyboard Shot。
-
-推荐工作流：
+Ready Validation、时长警告与多镜头能力由 Generation Profile Capability 决定，例如：
 
 ```text
-Storyboard Shots
-    ↓
-选择连续 Shot
-    ↓
-创建 / 调整 Generation Task Group
-    ↓
-Prompt AI 根据 Task 内多个 Shot 编译 Prompt
-    ↓
-Final Prompt
-    ↓
-Task Ready
-    ↓
-Queue
+multi_shot_prompt = true
+max_duration_seconds = 15
+continuation = true | false
 ```
 
-Storyboard 中可以提供：
-
-- 自动分组建议。
-- 手工 Group Selected Shots。
-- Split Task Here。
-- Merge Adjacent Tasks。
-- Move Shot to Previous / Next Task。
-- Unassign from Task。
-
-但任务分组不得破坏 Story Order。
+Core 不得写死 H3 或 15 秒。H3 专属语法只存在于 Prompt Skill、Adapter、Profile 或 Validator。
 
 ---
 
-## 6. H3 多分镜 Prompt
+## 6. Storyboard UI 表达
 
-对于支持 Prompt 内多分镜的 Generation Profile，PromptRequest 应包含结构化 Shot 列表，而不是只有一个“当前镜头”：
+视觉主对象是 Task Card：
 
 ```text
-PromptRequest
-├─ task
-├─ shots[]
-│  ├─ shot_id
-│  ├─ script_source
-│  ├─ story_beat
-│  ├─ shot_size
-│  ├─ camera_movement
-│  ├─ planned_duration
-│  ├─ assets
-│  └─ continuity_notes
-├─ previous_task_context
-├─ next_story_context
-├─ target_generation_profile
-└─ output_contract
+┌────────────────────────────┐
+│      Storyboard Frame      │
+├────────────────────────────┤
+│ Task A · READY · 15s       │
+│ 抵达仓库并推门             │
+│ 3 个视觉节拍 · 3 项资产    │
+└────────────────────────────┘
 ```
 
-MiniMax-H3 Skill 再把这些结构化信息编译成适合 H3 的多分镜 Prompt。
+不得再同时绘制一套 Shot Cards 与 Task Bands。用户应能一眼看出：
 
-Core 不直接保存 H3 专属 Prompt 语法。
+1. 每张卡就是一次生成任务；
+2. Task 可能包含多个镜头描述；
+3. Task 的计划时长、Profile 与运行状态；
+4. Task 与前后 Task 的 Context 关系；
+5. 卡片顺序与生成依赖是两回事。
+
+交互语义：
+
+- 单击 Task Card：选中并更新 Task Inspector；
+- 双击 Task Card：进入 Task Composer；
+- Ctrl/Cmd、Shift：多选 Task；
+- 拖动 Task Card：调整当前 Story Order / Scene placement；
+- 移动卡片不得改写 Job、Result 或 Context Link。
 
 ---
 
-## 7. Storyboard UI 表达
+## 7. Story Reel
 
-Storyboard 的视觉主对象仍然是 Shot Card。
+Story Reel 按 `TaskStoryboardPlacement` 的 Story Order 播放每个 Task 的 Primary Result；没有结果时使用 Task 的 Storyboard Frame 或 Placeholder。
 
-Generation Task 用“分组层”表达，例如：
-
-```text
-Task A · H3 · 12s · READY
-┌────────────────────────────────────────────┐
-│ [Shot 001] [Shot 002] [Shot 003]          │
-└────────────────────────────────────────────┘
-
-Task B · H3 · 9s · DRAFT
-┌──────────────────────────────┐
-│ [Shot 004] [Shot 005]       │
-└──────────────────────────────┘
-```
-
-可以使用：
-
-- 顶部 Task Band。
-- Shot 卡片上方连续括号 / 色带。
-- Task 边界分隔线。
-
-不要把 Task 再画成另一套与 Shot 卡片竞争的巨大卡片。
-
-用户应能一眼看出：
-
-1. Storyboard 一共有多少 Shot。
-2. 哪些 Shot 被组合到同一个生成 Task。
-3. Task 的总计划时长。
-4. Task 是否 Ready / Running / Failed。
-5. Task 与下一个 Task 的 Context 关系。
+V0.2 只提供播放、暂停、Previous / Next Task、Jump to Task 与当前 Task 高亮，不提供 NLE 时间线能力。
 
 ---
 
-## 8. Storyboard 重排与 Task 分组
+## 8. 迁移规则
 
-重排 Shot 时必须区分两种操作：
+早期代码中的 `ShotTask` 若本质上是一次生成生产单，应迁移为 `GenerationTask`，而不是拆成 `StoryboardShot + GenerationTask` 两套强制对象。
 
-### 8.1 只改变 Story Order
+旧设计中的以下结构不再是 V0.2 必需 Contract：
 
-用户拖动 Shot 改变叙事顺序。
+- 一级 `StoryboardShot` 集合；
+- `TaskShotBinding`；
+- 独立 Shot Card；
+- Generation Task Band；
+- 必选 `ResultShotSpan`。
 
-如果该 Shot 已被某个 Task 覆盖，系统不能静默改变历史 Job，也不能默默制造非连续 Task。
-
-应提示：
-
-```text
-Storyboard 顺序已改变，生成任务分组需要检查
-```
-
-### 8.2 同时调整 Task Grouping
-
-用户可以显式选择：
-
-```text
-随 Storyboard 调整当前 Draft Task 分组
-```
-
-只允许安全修改尚未产生不可变 Job 的 Draft Task。
-
-已有 Job 的 Task 历史保持不变，需要新 Revision / 新 Task Grouping。
+未来若产品确实需要专业 Shot 管理，可另立版本和迁移方案，不能反向改变 V0.2 中“一张卡就是一个 Task”的交互身份。
 
 ---
 
-## 9. Task Context Stale
+## 9. 不可违反的规则
 
-至少以下情况触发检查：
-
-- 上游 Task Primary Result 改变。
-- Task 分组改变。
-- Task 内 Shot 顺序改变。
-- Story Order 改变导致 Task 边界语义发生变化。
-- Context Link 来源改变。
-
-已有 Result 不自动删除。
-
-用户可选择：
-
-```text
-保持现有结果
-重编 Prompt
-更新 Context
-从该 Task 向后重新生成
-```
-
----
-
-## 10. Story Reel
-
-Story Reel 按 **Story Order** 播放，而不是按 Task Card 顺序简单播放完整文件。
-
-当一个 Result 覆盖多个 Shot 时，未来可依据 `ResultShotSpan` 在 Story Reel 中映射到对应 Shot。
-
-V0.2 Mock 阶段如果没有精确 span，可以：
-
-- 使用 Prompt 计划时长估算。
-- 或对整个 Task Result 只播放一次，同时高亮其覆盖的多个 Shot。
-
-但 Contract 不得假设一个 Result 只属于一张 Shot 卡。
-
----
-
-## 11. 架构不变量
-
-以下规则视为强约束：
-
-1. **Shot != Task。**
-2. **Task 可以包含多个 Shot。**
-3. **Domain 不限制 Shot 只能属于一个历史 Task。**
-4. **Story Order != Generation Grouping。**
-5. **Generation Grouping != Generation Context。**
-6. **Result != Shot Result；一个 Result 可以覆盖多个 Shot。**
-7. **生成进度 / Ready / Queue 状态属于 Task。**
-8. **Storyboard 创作字段属于 Shot。**
-9. **Job 保存 Task 与 Shot 关系的不可变快照。**
-10. **H3 的 15 秒和多分镜能力来自 Generation Profile / Capability，不写死在 Core。**
-11. **Storyboard 仍不是 NLE。**
+1. **1 Storyboard Card = 1 GenerationTask。**
+2. **Task 不硬绑定为一个 Shot；可描述一个或多个镜头 / 视觉节拍。**
+3. **Storyboard 是交互方式，不是独立分镜制作工具。**
+4. **Story Order != Generation Context。**
+5. **Task 是可变意图；Job 是不可变执行快照；Result 是不可变输出记录。**
+6. **Ready / Queue / Running 等执行状态属于 Task。**
+7. **Result 属于 Job，不因多镜头 Prompt 被伪造为多个结果。**
+8. **AI Prompt 不得自动覆盖人工 Final Prompt。**
+9. **H3 能力通过 Profile / Capability 表达，不写死 Core。**
+10. **Storyboard-style 工作区不是 NLE。**

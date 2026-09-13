@@ -5,6 +5,7 @@ import { App } from "./App";
 import { OverlayProvider } from "./ui/overlay";
 import "./styles/tokens.css";
 import "./styles/app.css";
+import "./styles/storyboard.css";
 import "./styles/composer.css";
 import "./styles/overlays.css";
 

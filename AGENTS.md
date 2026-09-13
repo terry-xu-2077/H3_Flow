@@ -1,6 +1,6 @@
 # ShotMill 开发导航
 
-ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器或 ComfyUI 外壳。项目以 Generation Task 为核心执行对象，同时以 Scene → Shot → Storyboard 作为用户侧主要创作入口。
+ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器或 ComfyUI 外壳。项目以 Generation Task 为核心对象，并通过 Storyboard-style Task Workspace 提供画面化、按故事顺序排列的创作入口。
 
 ## 文档入口
 
@@ -27,21 +27,20 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 - ShotMill Core 不得绑定 H3、Qwen、ComfyUI 或具体厂商。
 - Prompt AI Provider 与 Video Generation Provider 必须独立。
 - Provider 行为由 Capability 驱动；专属字段只存在于 Adapter、Profile、Skill、Validator 或 Provider Parameter Schema。
-- **Storyboard Shot 与 Generation Task 不是同一个对象。**
-- **一个 Generation Task 可以覆盖多个 Storyboard Shot。**
-- **Domain 不得限制一个 Shot 只能属于一个历史 Generation Task。** 长镜头未来可能通过多个 Task continuation 生成。
-- **Story Order、Generation Grouping、Generation Context 必须是三套独立关系。**
-- Shot 不保存唯一 `task_id`；Shot / Task 关系使用独立 `TaskShotBinding`。
-- Result 属于 Job / Task；一个 Result 可以通过 `ResultShotSpan` 映射到多个 Storyboard Shot，不得假设 `1 Result = 1 Shot`。
-- Ready、Queued、Running、Failed 等执行状态属于 Generation Task；Shot 只可显示其所覆盖 Task 的生产摘要。
+- **一张 Storyboard 卡片就是一个 Generation Task。** Storyboard 是分镜式交互方式，不是独立 Shot 制作工具。
+- **Task 不硬绑定为一个 Shot。** 一个 Task 可以在内部描述一个或多个镜头 / `TaskVisualBeat`；Beat 不拥有独立卡片、Queue、Job 或 Result 生命周期。
+- **Story Order、Task Content、Generation Context 必须是三套独立关系。**
+- V0.2 不要求一级 `StoryboardShot`、`TaskShotBinding` 或 `ResultShotSpan`；不得重建 Shot Cards + Task Bands 双层主界面。
+- Result 属于 Job / Task；多镜头 Task 的 Result 仍是一份完整结果，不得为了卡片布局伪造多个 Shot Result。
+- Ready、Queued、Running、Failed 等执行状态属于 Generation Task。
 - H3 当前约 15 秒单任务上限与多分镜 Prompt 能力必须由 Generation Profile / Capability 表达，不得写死在 Core。
-- Task 是可变生产意图；Job 是不可变执行快照；Job 必须保存当时的 TaskShotBindings、Prompt、Assets、Profile、Params 与 Context。
-- Storyboard 排序变化不得静默改写 Generation Grouping、历史 Job 或历史 Context。
-- Shot 展示编号不是稳定 ID；Scene / Shot / Task / Result / Context 关系必须使用稳定内部 ID。
+- Task 是可变生产意图；Job 是不可变执行快照；Job 必须保存当时的 Task 内容、Prompt、Assets、Profile、Params 与 Context。
+- Storyboard 排序变化不得静默改写 Task 内容、历史 Job 或历史 Context。
+- Task 展示编号不是稳定 ID；Scene / Task / Result / Context 关系必须使用稳定内部 ID。
 - 剧本原文、AI Prompt 与人工 Final Prompt 必须分离；后台操作不得覆盖人工 Final Prompt。
 - 项目业务引用使用 project-relative path 和 `asset_id`，不得传播绝对资产路径。
 - 重新生成不得覆盖历史 Result；Primary Result 变化必须正确传播 Context Stale。
-- Story Reel 仅用于按 Story Order 预览分镜和已有结果，不得演变为剪辑时间线、多轨、Trim、转场或关键帧编辑器。
+- Story Reel 仅用于按 Task Story Order 预览已有结果，不得演变为剪辑时间线、多轨、Trim、转场或关键帧编辑器。
 - UI 修改必须先阅读 `docs/UI_UX_SPEC.md`；Storyboard / Task 相关任务必须先阅读 `docs/STORYBOARD_TASK_MODEL.md` 与 `docs/V0.2_STORYBOARD_DEVELOPMENT_TASKS.md`；重要状态先进入 `/dev/ui`，再连接真实后端。
 - 测试修改必须先阅读 `docs/TEST_STRATEGY.md`。
 

@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 async function openComposer(page: import("@playwright/test").Page) {
   await page.goto("/dev/ui");
+  await page.getByRole("button", { name: "生产", exact: true }).click();
   await page.getByTestId("task-card-task-002").dblclick();
   await expect(page.getByTestId("task-composer")).toBeVisible();
 }
