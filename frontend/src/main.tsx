@@ -11,6 +11,7 @@ import "./styles/overlays.css";
 import "./styles/director.css";
 import "./styles/director-dialogs.css";
 import "./styles/simple-editor.css";
+import "./styles/project-workspace.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
