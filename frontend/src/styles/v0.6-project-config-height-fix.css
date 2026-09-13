@@ -1,0 +1,17 @@
+.sm-dialog:has(.project-config-dialog-v2) {
+  height: min(620px, calc(100vh - 88px));
+  max-height: min(620px, calc(100vh - 88px));
+}
+.sm-dialog:has(.project-config-dialog-v2) > .sm-dialog-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.project-config-dialog-v2 { height: 100%; }
+
+@media (max-width: 820px) {
+  .sm-dialog:has(.project-config-dialog-v2) {
+    height: calc(100vh - 36px);
+    max-height: calc(100vh - 36px);
+  }
+}
