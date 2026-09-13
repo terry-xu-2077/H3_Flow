@@ -21,6 +21,7 @@ export type PromptAsset = {
   reference: string;
   detail: string;
   tone: string;
+  previewUrl?: string;
 };
 
 export type AssetMention = {

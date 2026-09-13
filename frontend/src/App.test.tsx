@@ -16,7 +16,7 @@ async function openFirstProject(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: "打开项目 异星边境 初到基地" }));
 }
 
-describe("V0.5 Terry导演工作台", () => {
+describe("V0.6 Terry导演工作台", () => {
   it("默认打开项目首页，只负责选择或新建项目", () => {
     renderApp();
 
@@ -38,6 +38,8 @@ describe("V0.5 Terry导演工作台", () => {
     expect(screen.getAllByText("异星边境 初到基地").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /表格/ })).toHaveClass("is-active");
     expect(screen.getByRole("button", { name: /新建任务/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "返回项目首页" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "项目配置" })).toBeInTheDocument();
     expect(screen.getByText("#1 特瑞在荒漠驰骋")).toBeInTheDocument();
     expect(screen.getByText("#2 越过断层台地")).toBeInTheDocument();
     expect(screen.getByText("#3 驶入临时基地")).toBeInTheDocument();
@@ -56,6 +58,17 @@ describe("V0.5 Terry导演工作台", () => {
     expect(within(info).getByText("生成参数")).toBeInTheDocument();
     expect(within(info).queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("右侧已有生成结果的预览可以点击打开播放窗口", async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await openFirstProject(user);
+
+    await user.click(screen.getByRole("button", { name: "播放任务 特瑞在荒漠驰骋 的生成结果" }));
+    const dialog = screen.getByRole("dialog", { name: /播放结果 · 特瑞在荒漠驰骋/ });
+    expect(within(dialog).getByRole("button", { name: "关闭" })).toBeInTheDocument();
+    expect(dialog.querySelector("video")).not.toBeNull();
   });
 
   it("双击或右键任务进入同一套悬浮编辑窗", async () => {
@@ -91,7 +104,7 @@ describe("V0.5 Terry导演工作台", () => {
     expect(screen.getByText("#1 特瑞冲入基地")).toBeInTheDocument();
   });
 
-  it("列表和卡片是同一任务集合的两种视图，卡片模式有新建任务卡", async () => {
+  it("列表和卡片是同一任务集合的两种视图，卡片模式仍保留顶部新建任务栏", async () => {
     const user = userEvent.setup();
     renderApp();
     await openFirstProject(user);
@@ -100,9 +113,45 @@ describe("V0.5 Terry导演工作台", () => {
 
     expect(screen.getByRole("button", { name: /卡片/ })).toHaveClass("is-active");
     expect(screen.getByRole("button", { name: "新建任务卡" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /新建任务/ })).toBeInTheDocument();
+    expect(screen.getByText("3 个任务")).toBeInTheDocument();
     expect(screen.getByText("#1 特瑞在荒漠驰骋")).toBeInTheDocument();
     expect(screen.getByText("#2 越过断层台地")).toBeInTheDocument();
     expect(screen.getByText("#3 驶入临时基地")).toBeInTheDocument();
+  });
+
+  it("项目配置可以修改项目标题、简介和 AI 项目背景开关", async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await openFirstProject(user);
+
+    await user.click(screen.getByRole("button", { name: "项目配置" }));
+    const dialog = screen.getByRole("dialog", { name: "项目配置" });
+    const title = within(dialog).getByRole("textbox", { name: /项目标题/ });
+    const description = within(dialog).getByRole("textbox", { name: /项目简介/ });
+    const background = within(dialog).getByRole("checkbox", { name: /AI 增强时使用项目简介作为背景/ });
+
+    expect(background).toBeChecked();
+    await user.clear(title);
+    await user.type(title, "异星边境 第二版");
+    await user.clear(description);
+    await user.type(description, "新的项目背景信息");
+    await user.click(background);
+    await user.click(within(dialog).getByRole("button", { name: "保存" }));
+
+    expect(screen.getAllByText("异星边境 第二版").length).toBeGreaterThan(0);
+  });
+
+  it("项目配置包含资产管理入口", async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await openFirstProject(user);
+
+    await user.click(screen.getByRole("button", { name: "项目配置" }));
+    const dialog = screen.getByRole("dialog", { name: "项目配置" });
+    await user.click(within(dialog).getByRole("button", { name: /资产管理/ }));
+    expect(within(dialog).getByText("项目资产")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: /添加资产/ })).toBeInTheDocument();
   });
 
   it("列表模式的新建任务按钮直接打开任务编辑弹窗", async () => {
@@ -119,7 +168,7 @@ describe("V0.5 Terry导演工作台", () => {
     expect(within(dialog).getByRole("button", { name: "保存" })).toBeInTheDocument();
   });
 
-  it("底部只显示设置入口和当前运行摘要", async () => {
+  it("底部只显示应用设置入口和当前运行摘要", async () => {
     const user = userEvent.setup();
     renderApp();
     await openFirstProject(user);
@@ -130,12 +179,12 @@ describe("V0.5 Terry导演工作台", () => {
     expect(screen.queryByRole("button", { name: "素材" })).not.toBeInTheDocument();
   });
 
-  it("点击工作台标题返回项目首页", async () => {
+  it("点击返回首页按钮回到项目首页", async () => {
     const user = userEvent.setup();
     renderApp();
     await openFirstProject(user);
 
-    await user.click(screen.getByRole("button", { name: "Terry导演工作台" }));
+    await user.click(screen.getByRole("button", { name: "返回项目首页" }));
     expect(screen.getByRole("main", { name: "项目首页" })).toBeInTheDocument();
   });
 });

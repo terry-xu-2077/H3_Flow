@@ -1,8 +1,9 @@
-import { Clapperboard, Pencil, Sparkles } from "lucide-react";
+import { Clapperboard, Code2, Eye, Pencil, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "terry-react-ui-library";
 
-import { PromptAssetEditor, type PromptAsset } from "../../components/PromptAssetEditor";
+import { H3PromptEditor, type H3PromptViewMode } from "../../components/H3PromptEditor";
+import type { PromptAsset } from "../../components/PromptAssetEditor";
 import type { GenerationTask, ProjectAsset } from "../../domain/storyboard";
 import { Dialog, PortalSelect } from "../../ui/overlay";
 
@@ -16,6 +17,10 @@ type TaskEditorDialogProps = {
   open: boolean;
   task?: GenerationTask;
   assets: ProjectAsset[];
+  projectContext?: {
+    description: string;
+    useDescriptionForAiPrompt: boolean;
+  };
   onClose: () => void;
   onSave: TaskEditorSave;
 };
@@ -46,6 +51,7 @@ function promptAssetsForTask(task: GenerationTask | undefined, assets: ProjectAs
       reference: `<${referenceType} ${counters[kind]}>`,
       detail: binding.role === "character" ? "角色素材" : binding.role === "scene" ? "场景素材" : binding.role === "prop" ? "道具素材" : binding.role === "audio" ? "音频素材" : "参考素材",
       tone: kind === "subject" ? "amber" : kind === "video" ? "green" : kind === "audio" ? "violet" : "blue",
+      previewUrl: asset.previewUrl,
     }];
   });
 }
@@ -73,8 +79,14 @@ function normalizePromptMode(params: Record<string, unknown>, task: GenerationTa
   return "user";
 }
 
-export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEditorDialogProps) {
+function normalizeViewMode(params: Record<string, unknown>, key: string): H3PromptViewMode {
+  return params[key] === "text" ? "text" : "visual";
+}
+
+export function TaskEditorDialog({ open, task, assets, projectContext, onClose, onSave }: TaskEditorDialogProps) {
   const [promptMode, setPromptMode] = useState<PromptMode>("user");
+  const [userViewMode, setUserViewMode] = useState<H3PromptViewMode>("visual");
+  const [aiViewMode, setAiViewMode] = useState<H3PromptViewMode>("visual");
   const [taskTitle, setTaskTitle] = useState("");
   const [editingTitle, setEditingTitle] = useState(false);
   const [userPrompt, setUserPrompt] = useState("");
@@ -96,6 +108,8 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
       : task.userIntent || task.summary || "");
 
     setPromptMode(initialPromptMode);
+    setUserViewMode(normalizeViewMode(params, "userPromptViewMode"));
+    setAiViewMode(normalizeViewMode(params, "aiPromptViewMode"));
     setTaskTitle(task.title);
     setEditingTitle(false);
     setUserPrompt(initialUserPrompt);
@@ -113,6 +127,8 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
 
   const maxContextDuration = Math.max(1, Math.min(15, duration));
   const activePrompt = promptMode === "ai" ? aiPrompt : userPrompt;
+  const activeViewMode = promptMode === "ai" ? aiViewMode : userViewMode;
+  const setActiveViewMode = promptMode === "ai" ? setAiViewMode : setUserViewMode;
 
   const save = () => {
     onSave({
@@ -129,6 +145,8 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
         contextDurationSeconds: Math.min(contextDurationSeconds, maxContextDuration),
         promptSource: promptMode,
         userPrompt,
+        userPromptViewMode,
+        aiPromptViewMode,
       },
     });
     onClose();
@@ -268,37 +286,44 @@ export function TaskEditorDialog({ open, task, assets, onClose, onSave }: TaskEd
 
         <section className="simple-prompt-editor" aria-label="提示词编辑">
           <header className="simple-prompt-head">
-            <h2>提示词编辑</h2>
+            <div className="simple-prompt-title-group">
+              <h2>提示词编辑</h2>
+              <div className="simple-prompt-view-tabs" role="tablist" aria-label={`${promptMode === "ai" ? "AI增强" : "用户"}提示词显示模式`}>
+                <button type="button" role="tab" aria-selected={activeViewMode === "visual"} className={activeViewMode === "visual" ? "is-active" : ""} onClick={() => setActiveViewMode("visual")}><Eye size={13} /> 可视化</button>
+                <button type="button" role="tab" aria-selected={activeViewMode === "text"} className={activeViewMode === "text" ? "is-active" : ""} onClick={() => setActiveViewMode("text")}><Code2 size={13} /> 文本</button>
+              </div>
+            </div>
             <div className="simple-prompt-tabs" role="tablist" aria-label="提示词版本">
               <button type="button" role="tab" aria-selected={promptMode === "user"} className={promptMode === "user" ? "is-active" : ""} onClick={() => setPromptMode("user")}>用户</button>
               <button type="button" role="tab" aria-selected={promptMode === "ai"} className={promptMode === "ai" ? "is-active" : ""} onClick={() => setPromptMode("ai")}><Sparkles size={13} /> AI 增强</button>
             </div>
           </header>
 
-          {promptMode === "user" ? (
-            <div className="simple-prompt-body">
-              <PromptAssetEditor
+          <div className="simple-prompt-body">
+            {promptMode === "user" ? (
+              <H3PromptEditor
                 value={userPrompt}
                 onChange={setUserPrompt}
                 assets={promptAssets}
                 ariaLabel="用户提示词"
-                rows={18}
+                viewMode={userViewMode}
               />
-            </div>
-          ) : (
-            <div className="simple-prompt-body simple-ai-prompt">
-              <textarea
+            ) : (
+              <H3PromptEditor
                 value={aiPrompt}
-                onChange={(event) => setAiPrompt(event.target.value)}
-                aria-label="AI 增强提示词"
-                rows={18}
-                placeholder="AI 增强结果会显示在这里。"
+                onChange={setAiPrompt}
+                assets={promptAssets}
+                ariaLabel="AI 增强提示词"
+                viewMode={aiViewMode}
               />
-            </div>
-          )}
+            )}
+          </div>
 
           <footer className="simple-prompt-footer">
             <span><strong>@</strong> 输入 @ 引用当前任务资产</span>
+            {promptMode === "ai" && projectContext?.useDescriptionForAiPrompt && projectContext.description.trim() && (
+              <span className="simple-project-context-hint">AI 增强已启用项目背景</span>
+            )}
           </footer>
         </section>
 

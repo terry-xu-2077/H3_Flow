@@ -1,20 +1,29 @@
 import {
   Check,
+  FileImage,
+  Film,
   Folder,
   Grid2X2,
+  Home,
   List,
+  Music2,
   Pencil,
   Play,
   Plus,
   Settings,
+  SlidersHorizontal,
+  Trash2,
+  Upload,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "terry-react-ui-library";
 
 import {
   listTasksInStoryOrder,
   type GenerationTask,
+  type ProjectAsset,
+  type Result,
   type StoryboardDomainSnapshot,
 } from "../../domain/storyboard";
 import type { DirectorProject } from "../../mock/projects";
@@ -24,16 +33,26 @@ import { insertTaskAfter, updateTaskComposerFields } from "../storyboard/storybo
 
 type TaskViewMode = "list" | "card";
 type DisplayStatus = "idle" | "running" | "completed" | "failed";
+type ProjectConfigTab = "info" | "assets";
 
 type TaskEditorPatch = Partial<Pick<GenerationTask,
-  "aiPrompt" | "finalPrompt" | "generationParams" | "plannedDurationSeconds"
+  "title" | "aiPrompt" | "finalPrompt" | "generationParams" | "plannedDurationSeconds"
 >>;
+
+type ProjectSettingsPatch = Pick<DirectorProject, "title" | "description" | "useDescriptionForAiPrompt">;
 
 const taskStatusLabel: Record<DisplayStatus, string> = {
   idle: "未开始",
   running: "进行中",
   completed: "已完成",
   failed: "失败",
+};
+
+const assetCategoryLabel: Record<ProjectAsset["category"], string> = {
+  character: "角色",
+  scene: "场景",
+  prop: "道具",
+  reference: "参考",
 };
 
 function displayTaskStatus(task: GenerationTask): DisplayStatus {
@@ -63,13 +82,17 @@ function orderedTasks(snapshot: StoryboardDomainSnapshot) {
     .flatMap((scene) => listTasksInStoryOrder(snapshot, scene.id));
 }
 
-function taskPreview(snapshot: StoryboardDomainSnapshot, task: GenerationTask) {
+function taskResult(snapshot: StoryboardDomainSnapshot, task: GenerationTask) {
   const primary = task.primaryResultId
     ? snapshot.results.find((result) => result.id === task.primaryResultId)
     : undefined;
+  if (primary) return primary;
   const taskJobIds = new Set(snapshot.jobs.filter((job) => job.taskId === task.id).map((job) => job.id));
-  const latest = snapshot.results.slice().reverse().find((result) => taskJobIds.has(result.jobId));
-  return primary?.previewUrl ?? latest?.previewUrl ?? task.storyboardFrame.previewUrl;
+  return snapshot.results.slice().reverse().find((result) => taskJobIds.has(result.jobId));
+}
+
+function taskPreview(snapshot: StoryboardDomainSnapshot, task: GenerationTask) {
+  return taskResult(snapshot, task)?.previewUrl ?? task.storyboardFrame.previewUrl;
 }
 
 function resultCount(snapshot: StoryboardDomainSnapshot, taskId: string) {
@@ -104,7 +127,10 @@ function makeDraftTask(snapshot: StoryboardDomainSnapshot): GenerationTask {
       resolution: "1080p",
       quality: "标准",
       generationMode: "全能参考",
-      contextMode: "自动承接",
+      contextMode: "片段承接",
+      promptSource: "user",
+      userPromptViewMode: "visual",
+      aiPromptViewMode: "visual",
     },
     contextLinkIds: [],
     state: "draft",
@@ -177,7 +203,15 @@ function TaskPreview({ previewUrl, compact = false }: { previewUrl?: string; com
   );
 }
 
-function TaskInfoPanel({ snapshot, task }: { snapshot: StoryboardDomainSnapshot; task?: GenerationTask }) {
+function TaskInfoPanel({
+  snapshot,
+  task,
+  onPlayResult,
+}: {
+  snapshot: StoryboardDomainSnapshot;
+  task?: GenerationTask;
+  onPlayResult: (result: Result, task: GenerationTask) => void;
+}) {
   if (!task) {
     return (
       <aside className="project-task-info" aria-label="任务信息">
@@ -189,9 +223,19 @@ function TaskInfoPanel({ snapshot, task }: { snapshot: StoryboardDomainSnapshot;
   const params = task.generationParams ?? {};
   const status = displayTaskStatus(task);
   const prompt = promptSummary(task);
+  const result = taskResult(snapshot, task);
+  const preview = taskPreview(snapshot, task);
+
   return (
     <aside className="project-task-info" aria-label="任务信息">
-      <TaskPreview previewUrl={taskPreview(snapshot, task)} />
+      {result ? (
+        <button type="button" className="task-result-preview-button" onClick={() => onPlayResult(result, task)} aria-label={`播放任务 ${task.title} 的生成结果`}>
+          <TaskPreview previewUrl={preview} />
+          <span className="task-result-play"><Play size={25} fill="currentColor" /></span>
+        </button>
+      ) : (
+        <TaskPreview previewUrl={preview} />
+      )}
       <h2>任务名：{task.title}</h2>
 
       <section className="project-info-block">
@@ -212,15 +256,160 @@ function TaskInfoPanel({ snapshot, task }: { snapshot: StoryboardDomainSnapshot;
   );
 }
 
+function assetMediaIcon(asset: ProjectAsset) {
+  if (asset.mediaType === "video") return <Film size={16} />;
+  if (asset.mediaType === "audio") return <Music2 size={16} />;
+  return <FileImage size={16} />;
+}
+
+function ProjectConfigDialog({
+  open,
+  project,
+  onClose,
+  onSave,
+}: {
+  open: boolean;
+  project: DirectorProject;
+  onClose: () => void;
+  onSave: (settings: ProjectSettingsPatch, assets: ProjectAsset[]) => void;
+}) {
+  const [tab, setTab] = useState<ProjectConfigTab>("info");
+  const [title, setTitle] = useState(project.title);
+  const [description, setDescription] = useState(project.description);
+  const [useDescriptionForAiPrompt, setUseDescriptionForAiPrompt] = useState(project.useDescriptionForAiPrompt);
+  const [assets, setAssets] = useState<ProjectAsset[]>(project.snapshot.assets);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setTab("info");
+    setTitle(project.title);
+    setDescription(project.description);
+    setUseDescriptionForAiPrompt(project.useDescriptionForAiPrompt);
+    setAssets(project.snapshot.assets.map((asset) => ({ ...asset, tags: [...asset.tags] })));
+  }, [open, project]);
+
+  const importFiles = (files: FileList | null) => {
+    if (!files?.length) return;
+    const nextAssets = Array.from(files).map((file, index): ProjectAsset => {
+      const mediaType: ProjectAsset["mediaType"] = file.type.startsWith("video/")
+        ? "video"
+        : file.type.startsWith("audio/")
+          ? "audio"
+          : "image";
+      return {
+        id: `asset-local-${Date.now()}-${index}`,
+        name: file.name.replace(/\.[^.]+$/, "") || file.name,
+        mediaType,
+        category: "reference",
+        projectRelativePath: file.name,
+        previewUrl: mediaType === "audio" ? undefined : URL.createObjectURL(file),
+        tags: [],
+        checksum: `local-${file.size}-${file.lastModified}`,
+      };
+    });
+    setAssets((current) => [...current, ...nextAssets]);
+  };
+
+  return (
+    <Dialog open={open} size="wide" title="项目配置" description="管理项目级信息与资产。" onClose={onClose}>
+      <div className="project-config-dialog">
+        <nav className="project-config-tabs" aria-label="项目配置分类">
+          <button type="button" className={tab === "info" ? "is-active" : ""} onClick={() => setTab("info")}>项目信息</button>
+          <button type="button" className={tab === "assets" ? "is-active" : ""} onClick={() => setTab("assets")}>资产管理 <span>{assets.length}</span></button>
+        </nav>
+
+        <section className="project-config-content">
+          {tab === "info" ? (
+            <div className="project-config-info">
+              <label>
+                <span>项目标题</span>
+                <input value={title} onChange={(event) => setTitle(event.target.value)} />
+              </label>
+              <label>
+                <span>项目简介</span>
+                <textarea
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  rows={8}
+                  placeholder="用几句话说明项目的世界观、题材、角色关系或视觉基调。"
+                />
+              </label>
+              <label className="project-context-checkbox">
+                <input
+                  type="checkbox"
+                  checked={useDescriptionForAiPrompt}
+                  onChange={(event) => setUseDescriptionForAiPrompt(event.target.checked)}
+                />
+                <span>
+                  <strong>AI 增强时使用项目简介作为背景</strong>
+                  <small>启用后，项目简介会作为项目级背景信息提供给提示词增强服务，不直接写入用户提示词。</small>
+                </span>
+              </label>
+            </div>
+          ) : (
+            <div className="project-asset-manager">
+              <header>
+                <div><strong>项目资产</strong><span>{assets.length} 项</span></div>
+                <Button onClick={() => inputRef.current?.click()}><Upload size={14} /> 添加资产</Button>
+                <input
+                  ref={inputRef}
+                  hidden
+                  type="file"
+                  multiple
+                  accept="image/*,video/*,audio/*"
+                  onChange={(event) => {
+                    importFiles(event.target.files);
+                    event.currentTarget.value = "";
+                  }}
+                />
+              </header>
+              <div className="project-asset-list">
+                {assets.map((asset) => (
+                  <article key={asset.id} className="project-asset-row">
+                    <div className="project-asset-thumb" style={asset.previewUrl ? { backgroundImage: `url("${asset.previewUrl}")` } : undefined}>
+                      {!asset.previewUrl && assetMediaIcon(asset)}
+                    </div>
+                    <div className="project-asset-copy">
+                      <strong>{asset.name}</strong>
+                      <span>{assetCategoryLabel[asset.category]} · {asset.mediaType === "image" ? "图片" : asset.mediaType === "video" ? "视频" : "音频"}</span>
+                    </div>
+                    <button type="button" className="project-asset-remove" aria-label={`移除资产 ${asset.name}`} onClick={() => setAssets((current) => current.filter((item) => item.id !== asset.id))}><Trash2 size={15} /></button>
+                  </article>
+                ))}
+                {!assets.length && <div className="project-asset-empty">项目还没有资产。添加后可在任务提示词中使用 @ 引用。</div>}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <footer className="project-config-actions">
+          <Button onClick={onClose}>取消</Button>
+          <Button variant="accent" disabled={!title.trim()} onClick={() => {
+            onSave({
+              title: title.trim(),
+              description: description.trim(),
+              useDescriptionForAiPrompt,
+            }, assets);
+            onClose();
+          }}>保存</Button>
+        </footer>
+      </div>
+    </Dialog>
+  );
+}
+
 export function ProjectWorkspace({
   project,
   onBack,
   onRenameProject,
+  onUpdateProjectSettings,
   onSnapshotChange,
 }: {
   project: DirectorProject;
   onBack: () => void;
   onRenameProject: (title: string) => void;
+  onUpdateProjectSettings: (settings: ProjectSettingsPatch) => void;
   onSnapshotChange: (snapshot: StoryboardDomainSnapshot) => void;
 }) {
   const [viewMode, setViewMode] = useState<TaskViewMode>("list");
@@ -230,6 +419,8 @@ export function ProjectWorkspace({
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState(project.title);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [projectConfigOpen, setProjectConfigOpen] = useState(false);
+  const [playing, setPlaying] = useState<{ result: Result; task: GenerationTask } | null>(null);
 
   const tasks = useMemo(() => orderedTasks(project.snapshot), [project.snapshot]);
   const selectedTask = tasks.find((task) => task.id === selectedTaskId);
@@ -279,16 +470,18 @@ export function ProjectWorkspace({
     }
 
     if (!editingTaskId) return;
-    const { plannedDurationSeconds, ...composerPatch } = patch;
+    const { title, plannedDurationSeconds, ...composerPatch } = patch;
     let next = updateTaskComposerFields(project.snapshot, editingTaskId, composerPatch);
-    if (typeof plannedDurationSeconds === "number") {
-      next = {
-        ...next,
-        tasks: next.tasks.map((task) => task.id === editingTaskId
-          ? { ...task, plannedDurationSeconds }
-          : task),
-      };
-    }
+    next = {
+      ...next,
+      tasks: next.tasks.map((task) => task.id === editingTaskId
+        ? {
+            ...task,
+            ...(typeof title === "string" && title.trim() ? { title: title.trim() } : {}),
+            ...(typeof plannedDurationSeconds === "number" ? { plannedDurationSeconds } : {}),
+          }
+        : task),
+    };
     onSnapshotChange(next);
     closeEditor();
   };
@@ -296,28 +489,31 @@ export function ProjectWorkspace({
   return (
     <main className="project-workspace-page" aria-label="项目工作台">
       <header className="project-workspace-topbar">
-        <button type="button" className="workspace-brand" onClick={onBack}>Terry导演工作台</button>
+        <button type="button" className="workspace-home-button" onClick={onBack} aria-label="返回项目首页"><Home size={18} /> 返回首页</button>
         <div className="workspace-project-title">
           <Folder size={24} />
           <strong>{project.title}</strong>
           <button type="button" aria-label="重命名项目" onClick={() => setRenameOpen(true)}><Pencil size={17} /></button>
         </div>
-        <div className="workspace-view-switch" aria-label="任务视图">
-          <button type="button" className={viewMode === "list" ? "is-active" : ""} onClick={() => setViewMode("list")}><List size={15} /> 表格</button>
-          <span>/</span>
-          <button type="button" className={viewMode === "card" ? "is-active" : ""} onClick={() => setViewMode("card")}><Grid2X2 size={15} /> 卡片</button>
+        <div className="workspace-top-actions">
+          <button type="button" className="workspace-project-config-button" aria-label="项目配置" title="项目配置" onClick={() => setProjectConfigOpen(true)}><SlidersHorizontal size={18} /></button>
+          <div className="workspace-view-switch" aria-label="任务视图">
+            <button type="button" className={viewMode === "list" ? "is-active" : ""} onClick={() => setViewMode("list")}><List size={15} /> 表格</button>
+            <span>/</span>
+            <button type="button" className={viewMode === "card" ? "is-active" : ""} onClick={() => setViewMode("card")}><Grid2X2 size={15} /> 卡片</button>
+          </div>
         </div>
       </header>
 
       <div className="project-workspace-body">
         <section className="project-task-area" aria-label="任务区域">
+          <header className="task-workspace-toolbar">
+            <Button variant="accent" onClick={openNewTask}><Plus size={15} /> 新建任务</Button>
+            <span>{tasks.length} 个任务</span>
+          </header>
+
           {viewMode === "list" ? (
             <div className="task-list-view">
-              <header className="task-list-toolbar">
-                <Button variant="accent" onClick={openNewTask}><Plus size={15} /> 新建任务</Button>
-                <span>{tasks.length} 个任务</span>
-              </header>
-
               {tasks.length === 0 ? (
                 <div className="task-list-empty"><p>当前项目还没有任务。</p></div>
               ) : tasks.map((task, index) => {
@@ -379,7 +575,11 @@ export function ProjectWorkspace({
           )}
         </section>
 
-        <TaskInfoPanel snapshot={project.snapshot} task={selectedTask} />
+        <TaskInfoPanel
+          snapshot={project.snapshot}
+          task={selectedTask}
+          onPlayResult={(result, task) => setPlaying({ result, task })}
+        />
       </div>
 
       <footer className="project-workspace-statusbar">
@@ -397,8 +597,22 @@ export function ProjectWorkspace({
         open={Boolean(editingTask)}
         task={editingTask}
         assets={project.snapshot.assets}
+        projectContext={{
+          description: project.description,
+          useDescriptionForAiPrompt: project.useDescriptionForAiPrompt,
+        }}
         onClose={closeEditor}
         onSave={saveTask}
+      />
+
+      <ProjectConfigDialog
+        open={projectConfigOpen}
+        project={project}
+        onClose={() => setProjectConfigOpen(false)}
+        onSave={(settings, assets) => {
+          onUpdateProjectSettings(settings);
+          onSnapshotChange({ ...project.snapshot, assets });
+        }}
       />
 
       <Dialog open={renameOpen} title="重命名项目" onClose={() => setRenameOpen(false)}>
@@ -415,11 +629,20 @@ export function ProjectWorkspace({
         </div>
       </Dialog>
 
+      <Dialog open={Boolean(playing)} title={playing ? `播放结果 · ${playing.task.title}` : "播放结果"} onClose={() => setPlaying(null)}>
+        {playing && (
+          <div className="task-playback-dialog">
+            <video controls autoPlay={false} poster={playing.result.previewUrl} src={playing.result.videoUrl} />
+            <footer><span>{playing.task.number}</span><Button onClick={() => setPlaying(null)}>关闭</Button></footer>
+          </div>
+        )}
+      </Dialog>
+
       <Dialog open={settingsOpen} title="设置" onClose={() => setSettingsOpen(false)}>
         <div className="project-settings-placeholder">
           <Settings size={22} />
-          <h3>项目设置</h3>
-          <p>生成服务、项目素材管理和其他低频设置统一从这里进入，不再占用一级导航。</p>
+          <h3>应用设置</h3>
+          <p>生成服务与应用级低频设置从这里进入；项目自身的信息和资产请使用右上角“项目配置”。</p>
           <Button onClick={() => setSettingsOpen(false)}>关闭</Button>
         </div>
       </Dialog>
