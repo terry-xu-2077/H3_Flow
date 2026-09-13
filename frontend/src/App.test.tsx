@@ -74,6 +74,23 @@ describe("V0.5 Terry导演工作台", () => {
     expect(screen.getByRole("dialog", { name: /越过断层台地/ })).toBeInTheDocument();
   });
 
+  it("任务名称可以在编辑窗顶部原位修改并保存", async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await openFirstProject(user);
+
+    const firstRow = screen.getByText("#1 特瑞在荒漠驰骋").closest("button")!;
+    await user.dblClick(firstRow);
+    await user.click(screen.getByTitle("编辑任务名称"));
+    const titleInput = screen.getByRole("textbox", { name: "任务名称" });
+    await user.clear(titleInput);
+    await user.type(titleInput, "特瑞冲入基地");
+    await user.keyboard("{Enter}");
+    await user.click(screen.getByRole("button", { name: "保存" }));
+
+    expect(screen.getByText("#1 特瑞冲入基地")).toBeInTheDocument();
+  });
+
   it("列表和卡片是同一任务集合的两种视图，卡片模式有新建任务卡", async () => {
     const user = userEvent.setup();
     renderApp();
