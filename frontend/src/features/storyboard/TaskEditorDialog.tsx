@@ -10,12 +10,14 @@ type TaskEditorPatch = Partial<Pick<GenerationTask,
   "title" | "aiPrompt" | "finalPrompt" | "generationParams" | "plannedDurationSeconds"
 >>;
 
+type TaskEditorSave = { bivarianceHack(patch: TaskEditorPatch): void }["bivarianceHack"];
+
 type TaskEditorDialogProps = {
   open: boolean;
   task?: GenerationTask;
   assets: ProjectAsset[];
   onClose: () => void;
-  onSave: (patch: TaskEditorPatch) => void;
+  onSave: TaskEditorSave;
 };
 
 type PromptMode = "user" | "ai";
