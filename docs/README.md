@@ -7,6 +7,9 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
 - [V0.5 Terry导演工作台 UI 基线](./UI_V0.5_PROJECT_WORKSPACE.md)  
   **当前默认产品 UI 的最高优先级文档。** 定义项目首页、项目工作台、列表 / 卡片双视图、右侧只读栏、底部状态栏、任务编辑弹窗以及“列表模式必须有新建任务按钮”等规则。
 
+- [V0.5 任务编辑窗细化规范](./UI_V0.5_TASK_EDITOR_REFINEMENT.md)  
+  **任务编辑弹窗的最新细化规则。** 定义“任务图标 + 可编辑任务名”、片段承接 / 尾帧承接 / 不承接选项卡、承接时长、提示词底栏稳定规则，以及全应用下拉菜单必须匹配触发控件宽度。涉及任务编辑窗或 `PortalSelect` 时优先于 V0.5 主文档中的旧描述。
+
 - [V0.5 后端适配新前端方案](./V0.5_BACKEND_FRONTEND_ADAPTER.md)  
   **真实后端接入 V0.5 前端的契约。** 定义 ProjectSummary、ProjectWorkspaceView、TaskSummary、TaskEditorView、Runtime、推荐 API、SSE、Frontend Adapter / Gateway 和实施顺序。
 
@@ -84,6 +87,8 @@ Domain Contract
    ↓
 UI_V0.5_PROJECT_WORKSPACE
    ↓
+UI_V0.5_TASK_EDITOR_REFINEMENT（涉及任务编辑 / 下拉控件时）
+   ↓
 UI_DIRECTOR_MODE_GUIDE 中未冲突的防参数墙 / 查看编辑分离规则
    ↓
 UI_UX_SPEC
@@ -107,12 +112,13 @@ UI_UX_SPEC
 
 1. 明确的新需求 / 最新决策；
 2. **`UI_V0.5_PROJECT_WORKSPACE.md`：当前默认产品页面结构与交互；**
-3. `V0.5_BACKEND_FRONTEND_ADAPTER.md`：新前端与后端的边界；
-4. `UI_DIRECTOR_MODE_GUIDE.md`：查看/编辑分离、防参数墙、用户术语等未冲突规则；
-5. `STORYBOARD_TASK_MODEL.md`：领域关系；
-6. `UI_UX_SPEC.md`：通用 UI 行为；
-7. `TEST_STRATEGY.md`：测试与验收；
-8. `ShotMill_产品与架构规划.md`：其他核心架构；
-9. V0.2 / V0.1：历史能力基线。
+3. **`UI_V0.5_TASK_EDITOR_REFINEMENT.md`：任务编辑窗与通用下拉控件的最新细化；**
+4. `V0.5_BACKEND_FRONTEND_ADAPTER.md`：新前端与后端的边界；
+5. `UI_DIRECTOR_MODE_GUIDE.md`：查看/编辑分离、防参数墙、用户术语等未冲突规则；
+6. `STORYBOARD_TASK_MODEL.md`：领域关系；
+7. `UI_UX_SPEC.md`：通用 UI 行为；
+8. `TEST_STRATEGY.md`：测试与验收；
+9. `ShotMill_产品与架构规划.md`：其他核心架构；
+10. V0.2 / V0.1：历史能力基线。
 
 根目录 `AGENTS.md` 保持为轻量开发导航。

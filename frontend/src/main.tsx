@@ -12,6 +12,7 @@ import "./styles/director.css";
 import "./styles/director-dialogs.css";
 import "./styles/simple-editor.css";
 import "./styles/project-workspace.css";
+import "./styles/task-editor-polish.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

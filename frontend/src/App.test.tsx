@@ -55,7 +55,7 @@ describe("V0.5 Terry导演工作台", () => {
     expect(within(info).getByText("提示词")).toBeInTheDocument();
     expect(within(info).getByText("生成参数")).toBeInTheDocument();
     expect(within(info).queryByRole("textbox")).not.toBeInTheDocument();
-    expect(screen.queryByRole("dialog", { name: /编辑任务/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("双击或右键任务进入同一套悬浮编辑窗", async () => {
@@ -65,13 +65,30 @@ describe("V0.5 Terry导演工作台", () => {
 
     const firstRow = screen.getByText("#1 特瑞在荒漠驰骋").closest("button")!;
     await user.dblClick(firstRow);
-    expect(screen.getByRole("dialog", { name: /编辑任务 · T01-001/ })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: /特瑞在荒漠驰骋/ })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "取消" }));
 
     const secondRow = screen.getByText("#2 越过断层台地").closest("button")!;
     fireEvent.contextMenu(secondRow);
     fireEvent.click(screen.getByRole("menuitem", { name: "编辑任务" }));
-    expect(screen.getByRole("dialog", { name: /编辑任务 · T01-002/ })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: /越过断层台地/ })).toBeInTheDocument();
+  });
+
+  it("任务名称可以在编辑窗顶部原位修改并保存", async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await openFirstProject(user);
+
+    const firstRow = screen.getByText("#1 特瑞在荒漠驰骋").closest("button")!;
+    await user.dblClick(firstRow);
+    await user.click(screen.getByTitle("编辑任务名称"));
+    const titleInput = screen.getByRole("textbox", { name: "任务名称" });
+    await user.clear(titleInput);
+    await user.type(titleInput, "特瑞冲入基地");
+    await user.keyboard("{Enter}");
+    await user.click(screen.getByRole("button", { name: "保存" }));
+
+    expect(screen.getByText("#1 特瑞冲入基地")).toBeInTheDocument();
   });
 
   it("列表和卡片是同一任务集合的两种视图，卡片模式有新建任务卡", async () => {
@@ -95,7 +112,7 @@ describe("V0.5 Terry导演工作台", () => {
 
     await user.click(screen.getByRole("button", { name: /新建任务/ }));
 
-    const dialog = screen.getByRole("dialog", { name: /编辑任务/ });
+    const dialog = screen.getByRole("dialog", { name: /新任务/ });
     expect(within(dialog).getByText("任务配置")).toBeInTheDocument();
     expect(within(dialog).getByRole("region", { name: "提示词编辑" })).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "取消" })).toBeInTheDocument();
