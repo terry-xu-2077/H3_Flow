@@ -45,7 +45,7 @@ export function App() {
         <a className="brand" href="/" aria-label="ShotMill 首页">
           <span className="brand-mark"><Sparkles size={17} /></span>
           <strong>ShotMill</strong>
-          {isDevUi && <span className="dev-badge">DEV UI</span>}
+          {isDevUi && <span className="dev-badge">界面开发</span>}
         </a>
 
         <button className="project-switcher" type="button">
@@ -59,7 +59,7 @@ export function App() {
         <div className="system-status director-system-status">
           <span className={`status-dot ${providerOnline ? "is-online" : "is-offline"}`} />
           <span><small>生成服务</small><strong>{providerOnline ? "已连接" : "未连接"}</strong></span>
-          <StatusPill tone={providerOnline ? "active" : "danger"}>{providerOnline ? "READY" : "OFFLINE"}</StatusPill>
+          <StatusPill tone={providerOnline ? "active" : "danger"}>{providerOnline ? "正常" : "离线"}</StatusPill>
         </div>
 
         <button className="director-settings-button" type="button" aria-label="项目设置" title="项目设置">
