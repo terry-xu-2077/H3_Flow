@@ -14,6 +14,7 @@ import "./styles/simple-editor.css";
 import "./styles/project-workspace.css";
 import "./styles/task-editor-polish.css";
 import "./styles/v0.6-project-prompt.css";
+import "./styles/v0.6-project-config-polish.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
