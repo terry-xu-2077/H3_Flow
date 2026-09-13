@@ -1,4 +1,4 @@
-import type { StoryboardDomainSnapshot } from "../domain/storyboard";
+import type { GenerationTask, StoryboardDomainSnapshot } from "../domain/storyboard";
 import { mockStoryboard } from "./storyboard";
 
 export type DirectorProject = {
@@ -12,7 +12,7 @@ function cloneStoryboard() {
   return structuredClone(mockStoryboard) as StoryboardDomainSnapshot;
 }
 
-function keepFirstTasks(snapshot: StoryboardDomainSnapshot, count: number) {
+function keepFirstTasks(snapshot: StoryboardDomainSnapshot, count: number): StoryboardDomainSnapshot {
   const taskIds = new Set(snapshot.tasks.slice(0, count).map((task) => task.id));
   const jobIds = new Set(snapshot.jobs.filter((job) => taskIds.has(job.taskId)).map((job) => job.id));
   return {
@@ -35,7 +35,7 @@ function firstProjectSnapshot() {
     "越野车冲上断层边缘后短暂腾空，落地时悬挂压缩，保持上一镜运动方向。",
     "车辆进入临时基地，矿工与搭建中的设施逐渐进入画面，节奏由快转稳。",
   ];
-  snapshot.tasks = snapshot.tasks.map((task, index) => ({
+  snapshot.tasks = snapshot.tasks.map((task, index): GenerationTask => ({
     ...task,
     title: titles[index] ?? task.title,
     summary: prompts[index] ?? task.summary,
@@ -48,7 +48,7 @@ function firstProjectSnapshot() {
 
 function secondProjectSnapshot() {
   const snapshot = keepFirstTasks(cloneStoryboard(), 4);
-  snapshot.tasks = snapshot.tasks.map((task, index) => ({
+  snapshot.tasks = snapshot.tasks.map((task, index): GenerationTask => ({
     ...task,
     title: ["山门夜雨", "诡巷追踪", "纸人开眼", "古井回声"][index] ?? task.title,
     summary: "等待导演确认提示词与素材。",
@@ -66,7 +66,7 @@ function secondProjectSnapshot() {
 
 function thirdProjectSnapshot() {
   const snapshot = keepFirstTasks(cloneStoryboard(), 4);
-  snapshot.tasks = snapshot.tasks.map((task, index) => ({
+  snapshot.tasks = snapshot.tasks.map((task, index): GenerationTask => ({
     ...task,
     title: ["重返教室", "月考逆袭", "操场冲突", "成绩公布"][index] ?? task.title,
     summary: "已完成主要生成版本。",
