@@ -17,6 +17,7 @@ import "./styles/v0.6-project-prompt.css";
 import "./styles/v0.6-project-config-polish.css";
 import "./styles/v0.6-project-config-height-fix.css";
 import "./styles/v0.7-controls-polish.css";
+import "./styles/v0.8-ai-enhance.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
