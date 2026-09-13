@@ -2,6 +2,11 @@
 
 ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开发者 / Codex 应按任务读取必要文档。
 
+## 当前开发任务
+
+- [V0.3 Backend Foundation 开发任务](./V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS.md)  
+  **当前后端主执行清单。** 负责把现有 FastAPI 空壳升级为正式模块化单体后端，按 B0-B7 落地 SQLite / Repository、Project / Asset / Task、Frontend Adapter、AI Prompt Enhancement、Job / Result、ComfyUI Provider 和 Runtime Events。开始真实后端开发前必须先读此文档。
+
 ## 当前必须优先阅读
 
 - [AI 提示词增强专项架构](./AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md)  
@@ -26,7 +31,7 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
   定义任务标题区、紧凑生成参数、片段承接区间、固定少量候选项使用分段控件，以及下拉菜单宽度规则。
 
 - [V0.5 后端适配新前端方案](./V0.5_BACKEND_FRONTEND_ADAPTER.md)  
-  后端 Frontend Adapter 基线。ProjectSummary、ProjectWorkspaceView、TaskSummary、TaskEditorView、Runtime、推荐 API、SSE 和 Gateway 仍然有效；新增字段以后续增量为准。
+  后端 Frontend Adapter 基线。ProjectSummary、ProjectWorkspaceView、TaskSummary、TaskEditorView、Runtime、推荐 API、SSE 和 Gateway 仍然有效；V0.3 负责将这些契约真正落入后端代码。
 
 - [Director Mode UI 开发规范](./UI_DIRECTOR_MODE_GUIDE.md)  
   保留“查看与编辑分离、右侧只读、任务编辑使用悬浮窗、防参数墙、全中文”等通用规则。
@@ -45,7 +50,7 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
 - [测试策略](./TEST_STRATEGY.md)  
   Unit / Integration / Contract / E2E / Hardware Smoke、Fake Provider、故障注入和回归策略。
 
-## 历史版本文档
+## 历史开发任务
 
 - [V0.2 Storyboard-style Task Workspace 开发任务](./V0.2_STORYBOARD_DEVELOPMENT_TASKS.md)  
   已完成能力与领域回归基线。旧三栏 / Storyboard 默认界面不得覆盖当前 UI 决策。
@@ -58,7 +63,7 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
 
 ---
 
-# 当前 UI 心智
+# 当前产品心智
 
 默认产品结构固定为：
 
@@ -80,78 +85,47 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
        └─ AI增强历史 / 可重复增强
 ```
 
-不再使用：
-
-```text
-故事板 / 生成 / 素材
-```
-
-作为三个默认一级页面。
+不再使用 `故事板 / 生成 / 素材` 作为三个默认一级页面。
 
 底层领域关系仍然满足：
 
 ```text
 GenerationTask 可包含 1..N Visual Beats
 Story Order 与 Generation Context 独立
+Task 是可变生产意图
 Job 是不可变执行快照
 Result 属于 Job / Task 历史
 ```
 
-但这些内部关系不能直接决定默认 UI 信息架构。
+这些内部关系不能直接决定默认 UI 信息架构。
 
 ---
 
-# AI 提示词增强心智
+# 当前后端实施顺序
 
 ```text
-用户描述
-+ 当前任务真实图片 / 视频
-+ 媒体角色
-+ 可选项目背景
-+ 可选上一任务摘要
-        ↓
-目标视频模型专属 Prompt Skill
-        ↓
-Prompt AI Provider Adapter
-        ↓
-AI Prompt Revision
+V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS
+   ↓
+B0 Backend Skeleton
+   ↓
+B1 SQLite + Repository
+   ↓
+B2 Project / Asset / Task
+   ↓
+B3 Frontend Adapter / Read Model
+   ↓
+B4 AI Prompt Enhancement
+   ↓
+B5 Job / Result
+   ↓
+B6 ComfyUI Video Provider
+   ↓
+B7 Runtime Events / Queue Basics
 ```
 
-关键规则：
+在 B0-B3 未稳定前，不应把真实 Provider / Queue / 数据库逻辑直接绑进 React 组件。
 
-- 真实媒体是核心输入，资产名 / 引用标签不能代替媒体本体；
-- 上一任务摘要是**可选上下文**，不是默认必发；
-- 项目背景同样受用户开关控制；
-- H3 / Seedance 必须使用不同 Prompt Skill；
-- 前端只传 `assetId + role + context options`，媒体上传 / base64 / video_url / 抽帧属于 Provider Adapter。
-
----
-
-# UI 开发顺序
-
-```text
-Domain Contract
-   ↓
-UI_V0.5_PROJECT_WORKSPACE
-   ↓
-UI_V0.6_PROJECT_CONFIG_H3_EDITOR
-   ↓
-UI_V0.5_TASK_EDITOR_REFINEMENT
-   ↓
-UI_V0.8_AI_PROMPT_ENHANCEMENT（涉及 AI 增强 UI / 历史时）
-   ↓
-UI_DIRECTOR_MODE_GUIDE 中未冲突的防参数墙 / 查看编辑分离规则
-   ↓
-UI_UX_SPEC
-   ↓
-/dev/ui + Mock Data
-   ↓
-人工打磨视觉与交互
-   ↓
-回归测试
-```
-
-AI 提示词增强实现则优先遵守：
+AI 提示词增强实现优先遵守：
 
 ```text
 AI_PROMPT_ENHANCEMENT_ARCHITECTURE
@@ -170,17 +144,18 @@ V0.5_BACKEND_FRONTEND_ADAPTER
 发生冲突时：
 
 1. 明确的新需求 / 最新决策；
-2. **`AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`：AI 提示词增强输入、媒体、上下文、Skill、Provider 与 revision 架构；**
-3. `UI_V0.8_AI_PROMPT_ENHANCEMENT.md`：AI 增强 UI、历史、Prompt Source；
-4. `UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md`：项目工作台顶部、项目配置、H3 Prompt 与 Result；
-5. `UI_V0.5_PROJECT_WORKSPACE.md`：总体页面结构与交互；
-6. `UI_V0.5_TASK_EDITOR_REFINEMENT.md`：任务配置、Context、控件细化；
-7. `V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md` + `V0.6_BACKEND_DELTA.md` + `V0.5_BACKEND_FRONTEND_ADAPTER.md`：版本适配和前后端边界；
-8. `UI_DIRECTOR_MODE_GUIDE.md`：查看/编辑分离、防参数墙、用户术语等未冲突规则；
-9. `STORYBOARD_TASK_MODEL.md`：领域关系；
-10. `UI_UX_SPEC.md`：通用 UI 行为；
-11. `TEST_STRATEGY.md`：测试与验收；
-12. `ShotMill_产品与架构规划.md`：其他核心架构；
-13. V0.2 / V0.1：历史能力基线。
+2. **`V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS.md`：当前后端开发执行顺序、Gate 与 Freeze 标准；**
+3. **`AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`：AI 提示词增强输入、媒体、上下文、Skill、Provider 与 revision 架构；**
+4. `UI_V0.8_AI_PROMPT_ENHANCEMENT.md`：AI 增强 UI、历史、Prompt Source；
+5. `UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md`：项目工作台顶部、项目配置、H3 Prompt 与 Result；
+6. `UI_V0.5_PROJECT_WORKSPACE.md`：总体页面结构与交互；
+7. `UI_V0.5_TASK_EDITOR_REFINEMENT.md`：任务配置、Context、控件细化；
+8. `V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md` + `V0.6_BACKEND_DELTA.md` + `V0.5_BACKEND_FRONTEND_ADAPTER.md`：版本适配和前后端边界；
+9. `UI_DIRECTOR_MODE_GUIDE.md`：查看/编辑分离、防参数墙、用户术语等未冲突规则；
+10. `STORYBOARD_TASK_MODEL.md`：领域关系；
+11. `UI_UX_SPEC.md`：通用 UI 行为；
+12. `TEST_STRATEGY.md`：测试与验收；
+13. `ShotMill_产品与架构规划.md`：其他核心架构；
+14. V0.2 / V0.1：历史能力基线。
 
 根目录 `AGENTS.md` 保持为轻量开发导航。

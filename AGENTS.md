@@ -4,6 +4,7 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 
 ## 当前优先文档
 
+- **当前后端开发主任务：`docs/V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS.md`**
 - **AI 提示词增强专项架构：`docs/AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`**
 - AI 增强 UI：`docs/UI_V0.8_AI_PROMPT_ENHANCEMENT.md`
 - AI 增强 V0.8 后端迁移：`docs/V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md`
@@ -19,12 +20,12 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 - 测试与故障注入：`docs/TEST_STRATEGY.md`
 - 文档索引与冲突优先级：`docs/README.md`
 
-涉及 AI 提示词增强实现、媒体输入、上一任务摘要、项目背景、Prompt Skill 或 Prompt AI Provider 时，必须优先读取 `AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`。旧文档里的“故事板 / 生成 / 素材”三个一级页面已被当前 UI 覆盖，不得恢复。
+开始真实后端开发时必须先读 V0.3。涉及 AI 提示词增强实现、媒体输入、上一任务摘要、项目背景、Prompt Skill 或 Prompt AI Provider 时，还必须优先读取 `AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`。旧文档里的“故事板 / 生成 / 素材”三个一级页面已被当前 UI 覆盖，不得恢复。
 
 ## 目录职责
 
 - `frontend/`：React、TypeScript、Vite、Tauri 壳与 `/dev/ui`。
-- `backend/shotmill/`：FastAPI 与后续领域 / Application / Frontend Adapter。
+- `backend/shotmill/`：FastAPI 模块化单体后端，按 V0.3 建立 API / Domain / Application / Frontend Adapter / Provider / Persistence。
 - `scripts/`：统一开发与验收入口。
 - `tests/`：Python unit、integration、contract、E2E fixtures 与场景。
 - `docs/`：产品、交互、架构和测试协议。
@@ -43,6 +44,20 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 - 项目业务引用使用 project-relative path 和 `asset_id`，不得传播绝对资产路径。
 - Primary Result 变化必须正确传播 Context Stale。
 - H3 当前时长 / 多镜头等限制必须由 Profile / Capability 表达，不得写死在 Core。
+
+## V0.3 后端不变量
+
+- 当前后端以**模块化单体**为目标，不引入微服务、Redis、Celery、Kafka、CQRS/Event Sourcing 等额外基础设施。
+- 第一阶段持久化使用 `SQLite + SQLAlchemy 2.x + Alembic`。
+- `app.py` 只负责应用组装；业务逻辑不得继续堆入 route handler。
+- Application 层依赖 Repository 边界，不在业务代码中散落 SQL。
+- Project / Asset / Task 是首批正式 Source of Truth。
+- Asset 必须区分用户可改的 `name` 与只读 `original_filename`。
+- Frontend Adapter / Read Model 是 React 与 Core 的正式边界；UI 不直接消费数据库 model 或完整 `GenerationTask`。
+- 首页消费 `ProjectSummary`，项目页消费 `ProjectWorkspaceView / TaskSummary`，编辑窗消费 `TaskEditorView`。
+- 在 Project / Asset / Task / Frontend Adapter 稳定前，不把真实 ComfyUI、Prompt AI Provider 或复杂 Queue 直接绑入 React。
+- Job / Result 必须在正式 Video Provider 接入前建立不可变历史模型。
+- Provider 执行层可以未来拆远程服务，但 Domain 不因部署方式变化而拆散。
 
 ## 当前 UI 不变量
 
@@ -88,7 +103,6 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 ## 后端接入不变量
 
 - React 页面不得直接围绕 Core 对象或数据库表拼 UI；使用 Frontend Adapter / Read Model。
-- 首页消费 `ProjectSummary`，项目页消费 `ProjectWorkspaceView / TaskSummary`，编辑窗消费 `TaskEditorView`。
 - Project status、Task status、resultCount、preview fallback 等聚合逻辑放在后端 Adapter，不让前端理解 Job / Result / Context 细节。
 - 项目简介不得直接拼进用户 Prompt。
 - H3 可视化 HTML / Chip DOM 不得入库，后端只存标准 H3 文本。
@@ -101,6 +115,7 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 
 ## 开发与验收
 
+- 后端基础建设必须先阅读 `V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS.md`。
 - UI 修改必须先阅读当前相关的 V0.8 / V0.6 / V0.5 UI 文档和 `UI_DIRECTOR_MODE_GUIDE.md`。
 - AI 提示词增强实现必须先阅读 `AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`。
 - 后端接 UI 必须阅读 `V0.5_BACKEND_FRONTEND_ADAPTER.md`、`V0.6_BACKEND_DELTA.md` 与相关版本增量。
