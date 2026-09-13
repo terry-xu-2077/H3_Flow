@@ -4,6 +4,8 @@ import { mockStoryboard } from "./storyboard";
 export type DirectorProject = {
   id: string;
   title: string;
+  description: string;
+  useDescriptionForAiPrompt: boolean;
   coverUrl?: string;
   snapshot: StoryboardDomainSnapshot;
 };
@@ -81,17 +83,23 @@ export function makeMockProjects(): DirectorProject[] {
     {
       id: "project-offworld",
       title: "异星边境 初到基地",
+      description: "异星殖民地开荒题材。重点保持荒漠、基地建设、矿工群像与现实电影感，镜头之间要有明确的空间和运动连续性。",
+      useDescriptionForAiPrompt: true,
       coverUrl: "assets/storyboard/warehouse.webp",
       snapshot: firstProjectSnapshot(),
     },
     {
       id: "project-immortal",
       title: "诡道异仙 第一部",
+      description: "东方志怪与诡异修仙题材，避免现代感道具与过度游戏化视觉。",
+      useDescriptionForAiPrompt: true,
       snapshot: secondProjectSnapshot(),
     },
     {
       id: "project-school",
       title: "重生之我是高中学霸",
+      description: "现代校园短剧，画面自然写实，人物关系和校园空间保持连续。",
+      useDescriptionForAiPrompt: false,
       coverUrl: "assets/storyboard/rain.webp",
       snapshot: thirdProjectSnapshot(),
     },
@@ -106,5 +114,11 @@ export function makeEmptyProject(title: string, id = `project-${Date.now()}`): D
   snapshot.jobs = [];
   snapshot.results = [];
   snapshot.assets = [];
-  return { id, title, snapshot };
+  return {
+    id,
+    title,
+    description: "",
+    useDescriptionForAiPrompt: false,
+    snapshot,
+  };
 }
