@@ -6,7 +6,7 @@ import { mockStoryboard } from "../../mock/storyboard";
 import { ScriptToTasksDialog } from "./ScriptToTasksDialog";
 
 describe("ScriptToTasksDialog", () => {
-  it("creates a temporary Proposal from the explicitly selected script range", async () => {
+  it("creates a temporary shot suggestion from the explicitly selected script range", async () => {
     const user = userEvent.setup();
     render(
       <ScriptToTasksDialog
@@ -21,13 +21,13 @@ describe("ScriptToTasksDialog", () => {
     const script = screen.getByRole("textbox", { name: "剧本文本" }) as HTMLTextAreaElement;
     script.focus();
     script.setSelectionRange(0, 5);
-    await user.click(screen.getByRole("button", { name: "从选中段落创建 Proposal" }));
+    await user.click(screen.getByRole("button", { name: "从选中段落添加" }));
 
-    expect(screen.getByRole("article", { name: "Task Proposal 1" })).toBeInTheDocument();
-    expect(screen.getByText("已从选中文本创建一个待确认 Proposal。")).toBeInTheDocument();
+    expect(screen.getByRole("article", { name: "分镜建议 1" })).toBeInTheDocument();
+    expect(screen.getByText("已添加一个分镜建议。")).toBeInTheDocument();
   });
 
-  it("allows reorder, Scene choice, deletion, and explicit acceptance", async () => {
+  it("allows reorder, scene choice, deletion, and explicit creation without exposing engineering fields", async () => {
     const user = userEvent.setup();
     const onAccept = vi.fn();
     render(
@@ -40,18 +40,19 @@ describe("ScriptToTasksDialog", () => {
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: "生成 Mock AI Proposal" }));
-    const originalSecondTitle = (within(screen.getByRole("article", { name: "Task Proposal 2" })).getByLabelText("Title") as HTMLInputElement).value;
-    await user.click(screen.getByRole("button", { name: "下移 Proposal 1" }));
-    expect(within(screen.getByRole("article", { name: "Task Proposal 1" })).getByLabelText("Title")).toHaveValue(originalSecondTitle);
+    await user.click(screen.getByRole("button", { name: "AI 建议分镜" }));
+    const originalSecondTitle = (within(screen.getByRole("article", { name: "分镜建议 2" })).getByText("分镜标题").parentElement!.querySelector("input") as HTMLInputElement).value;
+    await user.click(screen.getByRole("button", { name: "下移分镜建议 1" }));
+    expect((within(screen.getByRole("article", { name: "分镜建议 1" })).getByText("分镜标题").parentElement!.querySelector("input") as HTMLInputElement).value).toBe(originalSecondTitle);
 
-    await user.click(screen.getByRole("button", { name: "Proposal 1 Target Scene" }));
+    await user.click(screen.getByRole("button", { name: "分镜建议 1 目标场景" }));
     await user.click(screen.getByRole("option", { name: /Scene 02 · 仓库大厅/ }));
-    await user.click(within(screen.getByRole("article", { name: "Task Proposal 2" })).getByRole("button", { name: "删除" }));
-    await user.click(screen.getByRole("button", { name: /接受全部并创建 1 个 Task/ }));
+    await user.click(within(screen.getByRole("article", { name: "分镜建议 2" })).getByRole("button", { name: "删除" }));
+    await user.click(screen.getByRole("button", { name: /创建全部 1 个分镜/ }));
 
     expect(onAccept).toHaveBeenCalledTimes(1);
     expect(onAccept.mock.calls[0][0]).toHaveLength(1);
     expect(onAccept.mock.calls[0][0][0].targetSceneId).toBe("scene-hall");
+    expect(screen.queryByText(/Visual Beats|User Intent|Target Scene|Proposal/)).not.toBeInTheDocument();
   });
 });
