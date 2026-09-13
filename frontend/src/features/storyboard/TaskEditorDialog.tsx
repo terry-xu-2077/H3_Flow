@@ -5,6 +5,10 @@ import { Button } from "terry-react-ui-library";
 import { H3PromptEditor, type H3PromptViewMode } from "../../components/H3PromptEditor";
 import type { PromptAsset } from "../../components/PromptAssetEditor";
 import type { GenerationTask, ProjectAsset } from "../../domain/storyboard";
+import type {
+  PromptEnhancementRequest,
+  PromptEnhancementResponse,
+} from "../../services/promptEnhancement";
 import { Dialog } from "../../ui/overlay";
 
 type TaskEditorPatch = Partial<Pick<GenerationTask,
@@ -18,18 +22,28 @@ type TaskEditorDialogProps = {
   task?: GenerationTask;
   assets: ProjectAsset[];
   previousTaskDurationSeconds?: number;
+  previousTaskSummary?: string;
   projectContext?: {
     description: string;
     useDescriptionForAiPrompt: boolean;
   };
+  onEnhancePrompt?: (request: PromptEnhancementRequest) => Promise<PromptEnhancementResponse>;
   onClose: () => void;
   onSave: TaskEditorSave;
 };
 
 type PromptMode = "user" | "ai";
 type ContextMode = "片段承接" | "尾帧承接" | "不承接";
-
 type ChoiceOption = { value: string; label: string };
+
+type AiPromptHistoryItem = {
+  id: string;
+  createdAt: string;
+  prompt: string;
+  sourceUserPrompt: string;
+  previousTaskSummary?: string;
+  projectBackgroundUsed?: boolean;
+};
 
 function assetKind(asset: ProjectAsset, role?: string): PromptAsset["kind"] {
   if (role === "character") return "subject";
@@ -84,6 +98,47 @@ function normalizePromptMode(params: Record<string, unknown>, task: GenerationTa
 
 function normalizeViewMode(params: Record<string, unknown>, key: string): H3PromptViewMode {
   return params[key] === "text" ? "text" : "visual";
+}
+
+function readAiHistory(params: Record<string, unknown>, task: GenerationTask): AiPromptHistoryItem[] {
+  const raw = params.aiPromptHistory;
+  if (Array.isArray(raw)) {
+    const parsed = raw.flatMap((item): AiPromptHistoryItem[] => {
+      if (!item || typeof item !== "object") return [];
+      const value = item as Record<string, unknown>;
+      if (typeof value.id !== "string" || typeof value.prompt !== "string") return [];
+      return [{
+        id: value.id,
+        createdAt: typeof value.createdAt === "string" ? value.createdAt : "",
+        prompt: value.prompt,
+        sourceUserPrompt: typeof value.sourceUserPrompt === "string" ? value.sourceUserPrompt : "",
+        previousTaskSummary: typeof value.previousTaskSummary === "string" ? value.previousTaskSummary : undefined,
+        projectBackgroundUsed: value.projectBackgroundUsed === true,
+      }];
+    });
+    if (parsed.length) return parsed;
+  }
+
+  if (task.aiPrompt?.trim()) {
+    return [{
+      id: `legacy-${task.id}`,
+      createdAt: "",
+      prompt: task.aiPrompt,
+      sourceUserPrompt: stringParam(params, "userPrompt", task.userIntent || task.summary || ""),
+    }];
+  }
+
+  return [];
+}
+
+function formatHistoryLabel(item: AiPromptHistoryItem, index: number, total: number) {
+  if (!item.createdAt) return total === 1 ? "已有 AI 提示词" : `增强记录 ${index + 1}`;
+  const date = new Date(item.createdAt);
+  const time = Number.isNaN(date.getTime())
+    ? ""
+    : new Intl.DateTimeFormat("zh-CN", { hour: "2-digit", minute: "2-digit" }).format(date);
+  const label = index === total - 1 ? "最新版本" : `增强记录 ${index + 1}`;
+  return time ? `${label} · ${time}` : label;
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -182,7 +237,9 @@ export function TaskEditorDialog({
   task,
   assets,
   previousTaskDurationSeconds = 0,
+  previousTaskSummary = "",
   projectContext,
+  onEnhancePrompt,
   onClose,
   onSave,
 }: TaskEditorDialogProps) {
@@ -193,6 +250,10 @@ export function TaskEditorDialog({
   const [editingTitle, setEditingTitle] = useState(false);
   const [userPrompt, setUserPrompt] = useState("");
   const [aiPrompt, setAiPrompt] = useState("");
+  const [aiHistory, setAiHistory] = useState<AiPromptHistoryItem[]>([]);
+  const [selectedAiHistoryId, setSelectedAiHistoryId] = useState("");
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const [enhanceError, setEnhanceError] = useState("");
   const [duration, setDuration] = useState(6);
   const [resolution, setResolution] = useState("1080p");
   const [quality, setQuality] = useState("标准");
@@ -209,6 +270,9 @@ export function TaskEditorDialog({
     const initialUserPrompt = storedUserPrompt || (initialPromptMode === "user"
       ? task.finalPrompt || task.userIntent || task.summary || ""
       : task.userIntent || task.summary || "");
+    const history = readAiHistory(params, task);
+    const storedHistoryId = stringParam(params, "selectedAiPromptHistoryId", "");
+    const selectedHistory = history.find((item) => item.id === storedHistoryId) ?? history.at(-1);
     const previousDuration = Math.max(0, Math.floor(previousTaskDurationSeconds));
     const legacyContextDuration = Math.max(1, numberParam(params, "contextDurationSeconds", 1));
     const defaultEnd = previousDuration;
@@ -226,7 +290,11 @@ export function TaskEditorDialog({
     setTaskTitle(task.title);
     setEditingTitle(false);
     setUserPrompt(initialUserPrompt);
-    setAiPrompt(task.aiPrompt || "");
+    setAiHistory(history);
+    setSelectedAiHistoryId(selectedHistory?.id ?? "");
+    setAiPrompt(selectedHistory?.prompt ?? task.aiPrompt ?? "");
+    setIsEnhancing(false);
+    setEnhanceError("");
     setDuration(task.plannedDurationSeconds || 6);
     setResolution(stringParam(params, "resolution", "1080p"));
     setQuality(stringParam(params, "quality", "标准"));
@@ -244,6 +312,78 @@ export function TaskEditorDialog({
   const activePrompt = promptMode === "ai" ? aiPrompt : userPrompt;
   const activeViewMode = promptMode === "ai" ? aiViewMode : userViewMode;
   const setActiveViewMode = promptMode === "ai" ? setAiViewMode : setUserViewMode;
+  const projectBackground = projectContext?.useDescriptionForAiPrompt && projectContext.description.trim()
+    ? projectContext.description.trim()
+    : undefined;
+
+  const updateAiPrompt = (value: string) => {
+    setAiPrompt(value);
+    if (!selectedAiHistoryId) return;
+    setAiHistory((current) => current.map((item) => item.id === selectedAiHistoryId ? { ...item, prompt: value } : item));
+  };
+
+  const selectAiHistory = (id: string) => {
+    const item = aiHistory.find((entry) => entry.id === id);
+    if (!item) return;
+    setSelectedAiHistoryId(item.id);
+    setAiPrompt(item.prompt);
+    setEnhanceError("");
+  };
+
+  const enhancePrompt = async () => {
+    if (!userPrompt.trim()) {
+      setEnhanceError("请先填写用户提示词。 ");
+      return;
+    }
+    if (!onEnhancePrompt) {
+      setEnhanceError("AI 增强服务尚未接入。 ");
+      return;
+    }
+
+    setIsEnhancing(true);
+    setEnhanceError("");
+    try {
+      const response = await onEnhancePrompt({
+        taskId: task.id,
+        userPrompt: userPrompt.trim(),
+        previousTaskSummary: previousTaskSummary.trim() || undefined,
+        projectBackground,
+        assets: promptAssets.map((asset) => ({
+          id: asset.id,
+          name: asset.name,
+          reference: asset.reference,
+          kind: asset.kind,
+        })),
+        generation: {
+          resolution,
+          quality,
+          mode: generationMode,
+          durationSeconds: duration,
+          contextMode,
+          contextStartSeconds: contextMode === "片段承接" ? contextStartSeconds : undefined,
+          contextEndSeconds: contextMode === "片段承接" ? contextEndSeconds : undefined,
+        },
+      });
+      if (!response.prompt.trim()) throw new Error("AI 增强没有返回提示词。 ");
+
+      const item: AiPromptHistoryItem = {
+        id: response.id || `ai-${Date.now()}`,
+        createdAt: response.createdAt || new Date().toISOString(),
+        prompt: response.prompt,
+        sourceUserPrompt: userPrompt,
+        previousTaskSummary: previousTaskSummary.trim() || undefined,
+        projectBackgroundUsed: Boolean(projectBackground),
+      };
+      setAiHistory((current) => [...current, item]);
+      setSelectedAiHistoryId(item.id);
+      setAiPrompt(item.prompt);
+      setPromptMode("ai");
+    } catch (error) {
+      setEnhanceError(error instanceof Error ? error.message : "AI 增强失败，请稍后重试。 ");
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
 
   const save = () => {
     onSave({
@@ -264,6 +404,8 @@ export function TaskEditorDialog({
         userPrompt,
         userPromptViewMode,
         aiPromptViewMode,
+        aiPromptHistory: aiHistory,
+        selectedAiPromptHistoryId: selectedAiHistoryId || undefined,
       },
     });
     onClose();
@@ -415,13 +557,30 @@ export function TaskEditorDialog({
                 <button type="button" role="tab" aria-selected={activeViewMode === "text"} className={activeViewMode === "text" ? "is-active" : ""} onClick={() => setActiveViewMode("text")}><Code2 size={13} /> 文本</button>
               </div>
             </div>
+
+            {promptMode === "ai" && (
+              <label className="simple-ai-history-select">
+                <select
+                  aria-label="AI提示词增强记录"
+                  value={selectedAiHistoryId}
+                  disabled={!aiHistory.length}
+                  onChange={(event) => selectAiHistory(event.target.value)}
+                >
+                  {!aiHistory.length && <option value="">暂无增强记录</option>}
+                  {aiHistory.map((item, index) => (
+                    <option key={item.id} value={item.id}>{formatHistoryLabel(item, index, aiHistory.length)}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
             <div className="simple-prompt-tabs" role="tablist" aria-label="提示词版本">
               <button type="button" role="tab" aria-selected={promptMode === "user"} className={promptMode === "user" ? "is-active" : ""} onClick={() => setPromptMode("user")}>用户</button>
               <button type="button" role="tab" aria-selected={promptMode === "ai"} className={promptMode === "ai" ? "is-active" : ""} onClick={() => setPromptMode("ai")}><Sparkles size={13} /> AI 增强</button>
             </div>
           </header>
 
-          <div className="simple-prompt-body">
+          <div className={`simple-prompt-body ${promptMode === "ai" ? "is-ai" : ""}`}>
             {promptMode === "user" ? (
               <H3PromptEditor
                 value={userPrompt}
@@ -431,31 +590,53 @@ export function TaskEditorDialog({
                 viewMode={userViewMode}
               />
             ) : (
-              <H3PromptEditor
-                value={aiPrompt}
-                onChange={setAiPrompt}
-                assets={promptAssets}
-                ariaLabel="AI 增强提示词"
-                viewMode={aiViewMode}
-              />
+              <>
+                <H3PromptEditor
+                  value={aiPrompt}
+                  onChange={updateAiPrompt}
+                  assets={promptAssets}
+                  ariaLabel="AI 增强提示词"
+                  viewMode={aiViewMode}
+                />
+                {!aiPrompt.trim() && (
+                  <div className="simple-ai-prompt-empty" aria-hidden="true">
+                    <strong>AI增强的提示词显示在这里</strong>
+                    <span>点击右下角“增强”，基于用户提示词生成一个新的增强版本。</span>
+                  </div>
+                )}
+                {enhanceError && <div className="simple-ai-enhance-error" role="alert">{enhanceError}</div>}
+                <button
+                  type="button"
+                  className="simple-ai-enhance-button"
+                  disabled={isEnhancing || !userPrompt.trim()}
+                  onClick={enhancePrompt}
+                >
+                  <Sparkles size={14} /> {isEnhancing ? "增强中…" : "增强"}
+                </button>
+              </>
             )}
           </div>
 
           <footer className="simple-prompt-footer">
             <span><strong>@</strong> 输入 @ 引用当前任务资产</span>
-            {promptMode === "ai" && projectContext?.useDescriptionForAiPrompt && projectContext.description.trim() && (
-              <span className="simple-project-context-hint">AI 增强已启用项目背景</span>
+            {promptMode === "ai" && previousTaskSummary.trim() && (
+              <span className="simple-ai-context-note">AI增强会参考上一任务摘要</span>
+            )}
+            {promptMode === "ai" && projectBackground && (
+              <span className="simple-project-context-hint">AI增强已启用项目背景</span>
             )}
           </footer>
         </section>
 
         <footer className="simple-task-editor-actions">
           <div className="simple-task-prompt-source">
-            <span>{promptMode === "ai" ? "已使用AI增强提示词" : "当前使用：用户提示词"}</span>
+            <span>{promptMode === "ai"
+              ? aiPrompt.trim() ? "已使用AI增强提示词" : "当前使用：AI增强提示词（尚未生成）"
+              : "当前使用：用户提示词"}</span>
           </div>
           <div className="simple-task-editor-action-buttons">
             <Button onClick={onClose}>取消</Button>
-            <Button variant="accent" onClick={save}>保存</Button>
+            <Button variant="accent" disabled={promptMode === "ai" && !aiPrompt.trim()} onClick={save}>保存</Button>
           </div>
         </footer>
       </div>

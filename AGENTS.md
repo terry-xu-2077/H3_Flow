@@ -4,8 +4,10 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 
 ## 当前优先文档
 
-- **最新 UI 增量：`docs/UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md`**
-- **V0.6 后端增量：`docs/V0.6_BACKEND_DELTA.md`**
+- **AI 增强最新 UI：`docs/UI_V0.8_AI_PROMPT_ENHANCEMENT.md`**
+- **AI 增强后端适配：`docs/V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md`**
+- 项目配置 / H3 Prompt 基线：`docs/UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md`
+- V0.6 后端增量：`docs/V0.6_BACKEND_DELTA.md`
 - 当前产品 UI 基线：`docs/UI_V0.5_PROJECT_WORKSPACE.md`
 - 任务编辑与 Context / Select 细化：`docs/UI_V0.5_TASK_EDITOR_REFINEMENT.md`
 - V0.5 后端适配基线：`docs/V0.5_BACKEND_FRONTEND_ADAPTER.md`
@@ -16,7 +18,7 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 - 测试与故障注入：`docs/TEST_STRATEGY.md`
 - 文档索引与冲突优先级：`docs/README.md`
 
-涉及项目工作台顶部、项目配置、Result 播放或提示词编辑时，必须先读 `UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md`。旧文档里的“故事板 / 生成 / 素材”三个一级页面已被当前 UI 覆盖，不得恢复。
+涉及 AI 增强、AI 历史版本、上一任务上下文时，必须先读 V0.8 两份文档。旧文档里的“故事板 / 生成 / 素材”三个一级页面已被当前 UI 覆盖，不得恢复。
 
 ## 目录职责
 
@@ -59,6 +61,9 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 - 任务编辑弹窗保持“左侧少量配置 + 右侧大提示词区 + 底部取消/保存”。
 - 用户提示词与 AI 增强提示词都必须支持 **可视化 / 文本** 两种模式。
 - 用户 / AI 标签决定真正使用哪份提示词；可视化 / 文本只决定同一份 H3 字符串的编辑表现。
+- **AI 增强历史下拉只在 AI 标签出现。** 每次点击“增强”创建新版本，不覆盖旧版本。
+- AI 增强页没有结果时必须显示明确空状态，不允许留下无提示的大面积空白。
+- 不得恢复“采用增强结果”按钮；当前 AI 历史版本就是 AI Prompt Source。
 - H3 可视化模式参考 `ComfyUI-TerryXu-nodes` 的 H3 Prompt Editor：标签、素材引用、Shot、对白、时间、运镜等以用户可读组件显示，但序列化仍保持标准 H3 文本。
 - Profile、Visual Beat、ContextLink、Job、Capability、Validation 等工程概念不得进入默认产品 UI。
 - 不得通过缩小字号、大量 Badge / Pill、密集 key-value 来容纳更多参数。
@@ -70,18 +75,20 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 - 首页消费 `ProjectSummary`，项目页消费 `ProjectWorkspaceView / TaskSummary`，编辑窗消费 `TaskEditorView`。
 - Project status、Task status、resultCount、preview fallback 等聚合逻辑放在后端 Adapter，不让前端理解 Job / Result / Context 细节。
 - 项目简介只在 `useDescriptionForAiPrompt=true` 时作为 Prompt Enhancer 项目级 Context；不得直接拼进用户 Prompt。
+- **AI 增强的上一任务上下文默认只使用摘要型文本：summary → 简短 userIntent → title。不得默认发送上一任务完整 userPrompt / aiPrompt / finalPrompt。**
+- AI Prompt Enhancement 每次调用产生独立 revision；失败调用不产生伪历史。
 - H3 可视化 HTML / Chip DOM 不得入库，后端只存标准 H3 文本。
 - Prompt Source 必须明确保存为 user / ai；两份 Prompt 独立保存。
 - `userViewMode / aiViewMode` 是 UI 偏好，不属于真实 Video Provider 参数；真实后端接入时应从 generationParams 中拆出。
 - 新建任务应在用户点击“保存”时才真正落库；打开空白编辑窗不产生数据库垃圾记录。
 - Core 的 Scene / TaskPlacement 不因当前 UI 隐藏 Scene 而删除；Adapter 负责压平成任务顺序。
 - 实时状态优先使用项目级 SSE，轮询可作为第一阶段 fallback。
-- 真实后端接入时优先新增 `ProjectGateway`，不要让组件散落 `fetch()`。
+- 真实后端接入时优先新增 `ProjectGateway`，不要让组件散落 `fetch()`；当前 `promptEnhancement` service 仅是过渡入口，后续应并入正式 Gateway / Adapter。
 
 ## 开发与验收
 
-- UI 修改必须先阅读 `UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md`、`UI_V0.5_PROJECT_WORKSPACE.md` 和 `UI_DIRECTOR_MODE_GUIDE.md`。
-- 后端接 UI 必须阅读 `V0.5_BACKEND_FRONTEND_ADAPTER.md` 与 `V0.6_BACKEND_DELTA.md`。
+- UI 修改必须先阅读当前相关的 V0.8 / V0.6 / V0.5 UI 文档和 `UI_DIRECTOR_MODE_GUIDE.md`。
+- 后端接 UI 必须阅读 `V0.5_BACKEND_FRONTEND_ADAPTER.md`、`V0.6_BACKEND_DELTA.md` 与 `V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md`。
 - Storyboard / Task 领域变更必须阅读 `STORYBOARD_TASK_MODEL.md`。
 - 测试修改必须阅读 `TEST_STRATEGY.md`。
 - 修改业务逻辑必须增加测试；修复 Bug 必须先增加可复现回归测试。

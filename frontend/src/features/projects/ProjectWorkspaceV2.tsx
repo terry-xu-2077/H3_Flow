@@ -19,6 +19,7 @@ import {
   type StoryboardDomainSnapshot,
 } from "../../domain/storyboard";
 import type { DirectorProject } from "../../mock/projects";
+import { requestPromptEnhancement } from "../../services/promptEnhancement";
 import { ContextMenu, Dialog } from "../../ui/overlay";
 import { TaskEditorDialog } from "../storyboard/TaskEditorDialog";
 import { insertTaskAfter, updateTaskComposerFields } from "../storyboard/storyboardMutations";
@@ -204,6 +205,9 @@ export function ProjectWorkspace({
       ? tasks[editingTaskIndex - 1]
       : undefined;
   const previousTaskDurationSeconds = previousEditingTask?.plannedDurationSeconds ?? 0;
+  const previousTaskSummary = previousEditingTask
+    ? previousEditingTask.summary.trim() || previousEditingTask.userIntent.trim() || previousEditingTask.title
+    : "";
   const runningTask = tasks.find((task) => ["running", "queued"].includes(task.state));
 
   useEffect(() => {
@@ -343,7 +347,9 @@ export function ProjectWorkspace({
         task={editingTask}
         assets={project.snapshot.assets}
         previousTaskDurationSeconds={previousTaskDurationSeconds}
+        previousTaskSummary={previousTaskSummary}
         projectContext={{ description: project.description, useDescriptionForAiPrompt: project.useDescriptionForAiPrompt }}
+        onEnhancePrompt={(request) => requestPromptEnhancement(project.id, request)}
         onClose={closeEditor}
         onSave={saveTask}
       />

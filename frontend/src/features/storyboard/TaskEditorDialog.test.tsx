@@ -1,14 +1,24 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 
 import type { GenerationTask } from "../../domain/storyboard";
 import { mockProjectAssets } from "../../mock/assets";
 import { mockStoryboard } from "../../mock/storyboard";
+import type { PromptEnhancementRequest, PromptEnhancementResponse } from "../../services/promptEnhancement";
 import { OverlayProvider } from "../../ui/overlay";
 import { TaskEditorDialog } from "./TaskEditorDialog";
 
-function renderEditor(onSave = vi.fn(), onClose = vi.fn(), task?: GenerationTask) {
+function renderEditor(
+  onSave = vi.fn(),
+  onClose = vi.fn(),
+  task?: GenerationTask,
+  onEnhancePrompt: (request: PromptEnhancementRequest) => Promise<PromptEnhancementResponse> = vi.fn(async () => ({
+    id: "ai-default",
+    createdAt: "2026-09-13T08:00:00+08:00",
+    prompt: "默认 AI 增强提示词",
+  })),
+) {
   return {
     onSave,
     onClose,
@@ -19,7 +29,9 @@ function renderEditor(onSave = vi.fn(), onClose = vi.fn(), task?: GenerationTask
           task={task ?? structuredClone(mockStoryboard.tasks[0])}
           assets={mockProjectAssets}
           previousTaskDurationSeconds={15}
+          previousTaskSummary="上一任务中，角色穿过雨夜码头并抵达仓库外。"
           projectContext={{ description: "雨夜旧港口项目背景", useDescriptionForAiPrompt: true }}
+          onEnhancePrompt={onEnhancePrompt}
           onClose={onClose}
           onSave={onSave}
         />
@@ -132,6 +144,7 @@ describe("TaskEditorDialog", () => {
     await user.click(screen.getByRole("tab", { name: /AI 增强/ }));
     expect(screen.getByRole("textbox", { name: "AI 增强提示词可视化" })).toBeInTheDocument();
     expect(screen.getByText("AI 增强已启用项目背景")).toBeInTheDocument();
+    expect(screen.getByText("AI增强会参考上一任务摘要")).toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: /文本/ }));
     expect(screen.getByRole("textbox", { name: "AI 增强提示词" })).toBeInTheDocument();
 
@@ -143,6 +156,62 @@ describe("TaskEditorDialog", () => {
       userPromptViewMode: "text",
       aiPromptViewMode: "text",
     });
+  });
+
+  it("shows AI history only on the AI tab and creates repeatable enhancement versions from summary context", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    const onEnhancePrompt = vi.fn()
+      .mockResolvedValueOnce({ id: "ai-v1", createdAt: "2026-09-13T08:10:00+08:00", prompt: "AI增强版本一" })
+      .mockResolvedValueOnce({ id: "ai-v2", createdAt: "2026-09-13T08:12:00+08:00", prompt: "AI增强版本二" });
+    const task = structuredClone(mockStoryboard.tasks[0]);
+    task.aiPrompt = "";
+    task.finalPrompt = "用户原始提示词";
+    task.generationParams = {
+      ...task.generationParams,
+      userPrompt: "用户原始提示词",
+      promptSource: "user",
+      aiPromptHistory: [],
+    };
+
+    renderEditor(onSave, vi.fn(), task, onEnhancePrompt);
+
+    expect(screen.queryByRole("combobox", { name: "AI提示词增强记录" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: /AI 增强/ }));
+
+    const history = screen.getByRole("combobox", { name: "AI提示词增强记录" });
+    expect(history).toBeDisabled();
+    expect(screen.getByText("AI增强的提示词显示在这里")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "保存" })).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "增强" }));
+    await waitFor(() => expect(onEnhancePrompt).toHaveBeenCalledTimes(1));
+    expect(onEnhancePrompt.mock.calls[0][0]).toMatchObject({
+      userPrompt: "用户原始提示词",
+      previousTaskSummary: "上一任务中，角色穿过雨夜码头并抵达仓库外。",
+      projectBackground: "雨夜旧港口项目背景",
+    });
+    expect(screen.getByRole("combobox", { name: "AI提示词增强记录" })).not.toBeDisabled();
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "AI 增强提示词可视化" })).toHaveTextContent("AI增强版本一"));
+
+    await user.click(screen.getByRole("button", { name: "增强" }));
+    await waitFor(() => expect(onEnhancePrompt).toHaveBeenCalledTimes(2));
+    expect(screen.getByRole("combobox", { name: "AI提示词增强记录" }).querySelectorAll("option")).toHaveLength(2);
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "AI 增强提示词可视化" })).toHaveTextContent("AI增强版本二"));
+
+    await user.selectOptions(screen.getByRole("combobox", { name: "AI提示词增强记录" }), "ai-v1");
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "AI 增强提示词可视化" })).toHaveTextContent("AI增强版本一"));
+    await user.click(screen.getByRole("button", { name: "保存" }));
+
+    expect(onSave.mock.calls[0][0]).toMatchObject({
+      aiPrompt: "AI增强版本一",
+      finalPrompt: "AI增强版本一",
+      generationParams: {
+        promptSource: "ai",
+        selectedAiPromptHistoryId: "ai-v1",
+      },
+    });
+    expect(onSave.mock.calls[0][0].generationParams.aiPromptHistory).toHaveLength(2);
   });
 
   it("uses whichever prompt tab is selected and shows the source in the bottom action bar", async () => {
@@ -179,6 +248,7 @@ describe("TaskEditorDialog", () => {
     expect(screen.getByRole("tab", { name: /AI 增强/ })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByText("已使用AI增强提示词")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /文本/ })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("combobox", { name: "AI提示词增强记录" })).toHaveValue(`legacy-${task.id}`);
   });
 
   it("cancels without saving", async () => {
