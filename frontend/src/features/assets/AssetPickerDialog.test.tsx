@@ -11,13 +11,13 @@ describe("AssetPickerDialog", () => {
     const onConfirm = vi.fn();
     render(<AssetPickerDialog open assets={mockProjectAssets} initialBindings={[]} onClose={vi.fn()} onConfirm={onConfirm} />);
 
-    await user.type(screen.getByRole("textbox", { name: "搜索资产" }), "雨声");
+    await user.type(screen.getByRole("textbox", { name: "搜索素材" }), "雨声");
     const rainAsset = screen.getByRole("option", { name: /雨声与远处汽笛/ });
     expect(screen.getAllByRole("option")).toHaveLength(1);
     await user.click(within(rainAsset).getByRole("button", { name: /预览/ }));
-    expect(screen.getByRole("complementary", { name: "资产预览" })).toHaveTextContent("assets/audio/harbor-rain.wav");
+    expect(screen.getByRole("complementary", { name: "素材预览" })).toHaveTextContent("assets/audio/harbor-rain.wav");
     await user.click(within(rainAsset).getAllByRole("button")[1]);
-    await user.click(screen.getByRole("button", { name: "确认绑定" }));
+    await user.click(screen.getByRole("button", { name: "添加到分镜" }));
 
     expect(onConfirm).toHaveBeenCalledWith([{ assetId: "asset-rain-audio", role: "audio" }]);
   });

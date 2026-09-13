@@ -9,10 +9,11 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 - V0.1 基础任务与总体 Phase：`docs/V0.1_DEVELOPMENT_TASKS.md`
 - 产品边界与核心架构：`docs/ShotMill_产品与架构规划.md`
 - UI / UX 行为协议：`docs/UI_UX_SPEC.md`
+- Director Mode 信息架构与防参数堆砌规则：`docs/UI_DIRECTOR_MODE_GUIDE.md`
 - 测试与故障注入：`docs/TEST_STRATEGY.md`
 - 文档索引：`docs/README.md`
 
-发生冲突时，按 `docs/README.md` 中的优先级处理。
+发生冲突时，按 `docs/README.md` 中的优先级处理；涉及“哪些信息可以出现在首屏”时，`docs/UI_DIRECTOR_MODE_GUIDE.md` 为强制约束。
 
 ## 目录职责
 
@@ -41,14 +42,27 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 - 项目业务引用使用 project-relative path 和 `asset_id`，不得传播绝对资产路径。
 - 重新生成不得覆盖历史 Result；Primary Result 变化必须正确传播 Context Stale。
 - Story Reel 仅用于按 Task Story Order 预览已有结果，不得演变为剪辑时间线、多轨、Trim、转场或关键帧编辑器。
-- UI 修改必须先阅读 `docs/UI_UX_SPEC.md`；Storyboard / Task 相关任务必须先阅读 `docs/STORYBOARD_TASK_MODEL.md` 与 `docs/V0.2_STORYBOARD_DEVELOPMENT_TASKS.md`；重要状态先进入 `/dev/ui`，再连接真实后端。
+
+### Director Mode UI 不变量
+
+- 一级导航围绕 **故事板 / 生成 / 素材**；设置与高级技术能力不得抢占一级导航。
+- **故事板是唯一完整分镜编辑入口。** 生成页只能监控队列、进度与异常，不得复制一套任务编辑器。
+- 故事板默认必须是单主画布，不得恢复常驻 `Scene Navigator | Task Board | Inspector` 三栏布局。
+- 分镜卡默认最多显示 5 类信息：代表画面、编号、标题/一句描述、时长、用户可理解的状态。
+- 简单分镜详情默认只显示：画面描述、时长、素材、连续性摘要、生成按钮、高级设置入口。
+- Profile、Prompt、Visual Beat、ContextLink、Job、Capability、Validation 等工程概念默认只能进入高级设置 / 调试层。
+- 不得通过缩小字号、增加大量 Badge / Pill、密集 key-value 或多层常驻折叠区来容纳更多参数。
+- 系统可自动推导和校验的步骤不得拆成一排要求用户逐项点击的按钮。
+- 用户可见文案优先使用创作语言：分镜、连续性、生成方案、生成服务、生成记录；避免直接暴露内部类名。
+- UI 修改必须先阅读 `docs/UI_UX_SPEC.md` 与 `docs/UI_DIRECTOR_MODE_GUIDE.md`；Storyboard / Task 相关任务还必须阅读 `docs/STORYBOARD_TASK_MODEL.md` 与 `docs/V0.2_STORYBOARD_DEVELOPMENT_TASKS.md`；重要状态先进入 `/dev/ui`，再连接真实后端。
 - 测试修改必须先阅读 `docs/TEST_STRATEGY.md`。
 
 ## 开发与验收
 
 - 使用完成当前任务所需的最小仓库上下文，不扫描无关模块。
 - 修改业务逻辑必须增加测试；修复 Bug 必须先增加可复现的回归测试。
-- Provider 变更必须运行 Contract Tests；UI 行为变化必须运行相关 Playwright 测试。
+- Provider 变更必须运行 Contract Tests；UI 行为变化必须运行相关 Playwright / Vitest 测试。
+- UI PR 必须检查 `docs/UI_DIRECTOR_MODE_GUIDE.md` 的 Code Review 清单，尤其是参数暴露预算和重复编辑入口。
 - 开发中优先运行 targeted tests，完成前运行对应的 `python scripts/verify.py --area <area>`。
 - 发布与高风险跨域变更运行 `python scripts/verify.py --full`。
 - 禁止删除、跳过或弱化有效测试来规避失败。
