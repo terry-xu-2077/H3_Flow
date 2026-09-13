@@ -11,8 +11,8 @@ import {
 
 type DialogProps = {
   open: boolean;
-  title: string;
-  description?: string;
+  title: ReactNode;
+  description?: ReactNode;
   children: ReactNode;
   onClose: () => void;
   size?: "default" | "wide";
