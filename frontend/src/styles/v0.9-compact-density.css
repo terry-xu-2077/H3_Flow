@@ -2,212 +2,285 @@
    ShotMill is a desktop production tool: keep typography readable, tighten chrome and spacing. */
 
 :root {
-  --sm-dense-control-h: 30px;
-  --sm-dense-row-h: 54px;
-  --sm-dense-gap: 8px;
-  --sm-dense-panel-pad: 12px;
+  --sm-dense-control-h: 28px;
+  --sm-dense-row-h: 52px;
+  --sm-dense-gap: 7px;
+  --sm-dense-panel-pad: 10px;
 }
 
 /* Shared controls and dialog chrome */
 .tc-button {
   min-height: var(--sm-dense-control-h);
-  padding: 5px 10px;
+  padding: 4px 9px;
 }
 
 .sm-dialog > header {
-  gap: 16px;
-  padding: 13px 16px 11px;
+  gap: 14px;
+  padding: 11px 14px 9px;
 }
 
-.sm-dialog > header h2 { font-size: 17px; }
-.sm-dialog > header p { margin-top: 3px; }
-.sm-dialog-content { padding: 12px 14px 14px; }
+.sm-dialog > header h2 { font-size: 16px; }
+.sm-dialog > header p { margin-top: 2px; }
+.sm-dialog-content { padding: 10px 12px 12px; }
 
 .sm-dialog > header > button,
 .sm-fullscreen-preview > button {
-  width: 29px;
-  height: 29px;
+  width: 28px;
+  height: 28px;
 }
 
 .sm-select-trigger {
   min-height: var(--sm-dense-control-h);
-  padding: 5px 8px;
+  padding: 4px 7px;
 }
 
 /* Main project workspace */
 .project-workspace-page {
-  grid-template-rows: 50px minmax(0, 1fr) 38px;
-  padding: 14px 20px 12px;
+  grid-template-rows: 48px minmax(0, 1fr) 36px;
+  padding: 12px 18px 10px;
 }
 
 .project-workspace-topbar { min-height: 0; }
 .workspace-project-title,
-.workspace-view-switch { padding-bottom: 7px; }
-.workspace-home-button { padding-bottom: 7px; }
+.workspace-view-switch { padding-bottom: 6px; }
+.workspace-home-button { padding-bottom: 6px; }
 
-.project-task-area { padding: 16px 14px 20px 0; }
-.project-task-info { padding: 16px 0 18px 13px; }
-.project-task-info > h2 { margin: 10px 0 11px; }
+.project-task-area { padding: 14px 12px 18px 0; }
+.project-task-info { padding: 14px 0 16px 11px; }
+.project-task-info > h2 { margin: 9px 0 10px; }
 
 .project-info-block {
   min-height: 0;
-  margin-bottom: 9px;
-  padding: 10px 11px;
+  margin-bottom: 8px;
+  padding: 9px 10px;
 }
-.project-info-block h3 { margin-bottom: 7px; }
-.project-info-block dl { gap: 5px; }
+.project-info-block h3 { margin-bottom: 6px; }
+.project-info-block dl { gap: 4px; }
 
 /* Task table/list */
 .task-list-toolbar {
-  min-height: 32px;
-  gap: 8px;
-  margin-bottom: 8px;
+  min-height: 30px;
+  gap: 7px;
+  margin-bottom: 7px;
 }
 
 .task-list-row {
-  min-height: 60px;
-  grid-template-columns: 68px minmax(0, 1fr) 116px 82px;
-  gap: 11px;
-  margin-bottom: 7px;
-  padding: 6px 9px 6px 6px;
-  border-radius: 9px;
+  min-height: 56px;
+  grid-template-columns: 64px minmax(0, 1fr) 112px 80px;
+  gap: 10px;
+  margin-bottom: 6px;
+  padding: 5px 8px 5px 5px;
+  border-radius: 8px;
 }
 
 .task-preview.is-compact {
-  width: 68px;
-  min-height: 42px;
-  height: 42px;
+  width: 64px;
+  min-height: 40px;
+  height: 40px;
 }
 
-.task-list-copy { gap: 3px; }
-.task-list-stats { gap: 2px; }
+.task-list-copy { gap: 2px; }
+.task-list-stats { gap: 1px; }
 .task-list-status,
-.task-card-status { gap: 6px; }
+.task-card-status { gap: 5px; }
 
 /* Task cards */
-.task-card-view { gap: 13px 17px; }
+.task-card-view { gap: 11px 15px; }
 .task-create-card,
 .task-card-item {
-  min-height: 258px;
-  padding: 8px;
-  border-radius: 10px;
+  min-height: 246px;
+  padding: 7px;
+  border-radius: 9px;
 }
-.task-create-card { gap: 14px; }
-.task-create-card > div { min-height: 126px; }
-.task-card-preview-wrap .task-preview { min-height: 126px; }
-.task-card-item > strong { margin: 9px 2px 5px; }
-.task-card-item > p { margin-bottom: 7px; }
+.task-create-card { gap: 12px; }
+.task-create-card > div { min-height: 120px; }
+.task-card-preview-wrap .task-preview { min-height: 120px; }
+.task-card-item > strong { margin: 8px 2px 4px; }
+.task-card-item > p { margin-bottom: 6px; }
 
 /* Project home */
-.project-home { padding: 24px 28px 44px; }
-.project-home-title { margin-bottom: 54px; }
-.project-folder-grid { gap: 42px 52px; }
-.project-folder-card { min-height: 164px; }
-.project-folder-cover { min-height: 82px; margin: 14px 11px 0; }
-.project-folder-card h2 { margin: 8px 11px 5px; }
-.project-folder-card > footer { padding: 6px 11px 8px; }
-.project-create-card { min-height: 136px; }
+.project-home { padding: 22px 26px 40px; }
+.project-home-title { margin-bottom: 48px; }
+.project-folder-grid { gap: 38px 46px; }
+.project-folder-card { min-height: 158px; }
+.project-folder-cover { min-height: 78px; margin: 13px 10px 0; }
+.project-folder-card h2 { margin: 7px 10px 4px; }
+.project-folder-card > footer { padding: 5px 10px 7px; }
+.project-create-card { min-height: 130px; }
 
-/* Task editor: compact controls, keep the prompt canvas large. */
+/* Task editor: fixed desktop footprint. Mode switches replace content inside the frame; they never resize the dialog. */
 .sm-dialog:has(.simple-task-editor) {
-  width: min(1120px, calc(100vw - 40px));
-  max-height: min(88vh, 800px);
+  width: min(980px, calc(100vw - 28px));
+  height: min(760px, calc(100vh - 28px));
+  min-height: min(660px, calc(100vh - 28px));
+  max-height: min(760px, calc(100vh - 28px));
 }
 
-.simple-task-editor { grid-template-columns: clamp(196px, 22vw, 250px) minmax(0, 1fr); }
-.simple-task-config > header { padding: 10px 12px; }
-.simple-task-config section { gap: 8px; padding: 10px 12px; }
+.sm-dialog:has(.simple-task-editor) > .sm-dialog-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.simple-task-editor {
+  height: 100%;
+  min-height: 0;
+  grid-template-columns: clamp(205px, 23vw, 232px) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.simple-task-config > header { padding: 9px 11px; }
+.simple-task-config section { gap: 7px; padding: 9px 11px; }
 .simple-task-config h3 { font-size: 11.5px; }
-.simple-segmented-control { gap: 2px; padding: 2px; }
-.simple-segmented-control button { padding: 6px 4px; }
-.simple-prompt-head { height: 43px; }
-.simple-prompt-head h2 { padding-inline: 12px; }
-.simple-prompt-body { padding: 11px; }
-.simple-task-editor-actions { padding: 8px 11px; }
-.h3-visual-editor { padding: 11px; }
-.h3-visual-editor-hint { padding-top: 6px; }
+.simple-choice-field { min-width: 0; }
+
+/* Terry React UI Library grouped labels. Keep product layout only; component geometry stays library-owned. */
+.simple-segmented-control,
+.simple-context-tabs {
+  width: 100%;
+  gap: 0;
+  padding: 0;
+}
+.simple-segmented-control .tc-segmented-item,
+.simple-context-tabs .tc-segmented-item {
+  min-width: 0;
+  padding-inline: 5px;
+}
+
+.simple-context-detail-slot {
+  min-height: 96px;
+  display: grid;
+  align-content: start;
+}
+
+.simple-prompt-head {
+  height: 42px;
+  min-height: 42px;
+  align-items: center;
+  gap: 8px;
+  padding-right: 8px;
+}
+.simple-prompt-head h2 { padding-inline: 11px; }
+.simple-prompt-title-group {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.simple-prompt-view-tabs,
+.simple-prompt-tabs {
+  flex: 0 0 auto;
+  align-self: center;
+}
+.simple-prompt-view-tabs .tc-segmented-item,
+.simple-prompt-tabs .tc-segmented-item {
+  min-width: 64px;
+  padding-inline: 8px;
+  border: 1px solid var(--tc-border-color);
+  background: color-mix(in srgb,var(--tc-panel) 88%,var(--tc-surface-2) 12%);
+  color: var(--tc-text-muted);
+}
+.simple-prompt-view-tabs .tc-segmented-item + .tc-segmented-item,
+.simple-prompt-tabs .tc-segmented-item + .tc-segmented-item { margin-left: -1px; }
+.simple-prompt-view-tabs .tc-segmented-item.is-active,
+.simple-prompt-tabs .tc-segmented-item.is-active {
+  color: #fff;
+  border-color: color-mix(in srgb,var(--tc-accent) 68%,white 12%);
+  background: linear-gradient(180deg,color-mix(in srgb,var(--tc-accent) 30%,var(--tc-panel)) 0%,color-mix(in srgb,var(--tc-accent) 16%,var(--tc-panel-2)) 100%);
+  box-shadow: inset 0 -2px 0 var(--tc-accent),0 1px 4px color-mix(in srgb,var(--tc-shadow) 28%,transparent);
+}
+
+.simple-ai-history-select {
+  width: min(190px, 24%);
+  min-width: 140px;
+  margin-left: auto;
+}
+.simple-ai-history-select .tc-control-wrap,
+.simple-ai-history-select .tc-control { width: 100%; }
+
+.simple-prompt-body { min-height: 0; padding: 10px; overflow: hidden; }
+.simple-task-editor-actions { padding: 7px 10px; }
+.h3-visual-editor { padding: 10px; }
+.h3-visual-editor-hint { padding-top: 5px; }
 
 /* Project configuration: do not make a sparse window larger than its content needs. */
 .sm-dialog:has(.project-config-dialog-v2) {
-  width: min(920px, calc(100vw - 40px));
-  height: min(580px, calc(100vh - 64px));
-  max-height: min(580px, calc(100vh - 64px));
+  width: min(900px, calc(100vw - 36px));
+  height: min(560px, calc(100vh - 58px));
+  max-height: min(560px, calc(100vh - 58px));
 }
 
 .project-config-dialog-v2 {
-  grid-template-columns: clamp(118px, 15vw, 148px) minmax(0, 1fr);
+  grid-template-columns: clamp(114px, 14vw, 142px) minmax(0, 1fr);
 }
 
-.project-config-dialog-v2 .project-config-tabs { padding: 9px 7px; }
+.project-config-dialog-v2 .project-config-tabs { padding: 8px 6px; }
 .project-config-dialog-v2 .project-config-tabs button {
-  min-height: 34px;
-  margin-bottom: 3px;
-  padding: 7px 9px;
+  min-height: 32px;
+  margin-bottom: 2px;
+  padding: 6px 8px;
 }
 
-.project-config-dialog-v2 .project-config-content {
-  padding: 12px;
-}
-.project-config-dialog-v2 .project-config-info { gap: 12px; }
-.project-config-actions { padding: 8px 10px; }
+.project-config-dialog-v2 .project-config-content { padding: 10px; }
+.project-config-dialog-v2 .project-config-info { gap: 10px; }
+.project-config-actions { padding: 7px 9px; }
 
 /* Asset manager: denser list and less empty chrome. */
 .project-asset-manager-v2 {
-  grid-template-columns: minmax(240px, 45%) minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: minmax(230px, 44%) minmax(0, 1fr);
+  gap: 8px;
 }
 
 .project-asset-browser,
 .project-asset-inspector { border-radius: 8px; }
 
 .project-asset-browser > header {
-  min-height: 42px;
-  gap: 7px;
-  padding: 6px 8px;
+  min-height: 40px;
+  gap: 6px;
+  padding: 5px 7px;
 }
-.project-asset-browser > header button { min-width: 78px; }
+.project-asset-browser > header button { min-width: 74px; }
 
-.project-asset-list-v2 { padding: 5px; }
+.project-asset-list-v2 { padding: 4px; }
 .project-asset-row-v2 {
-  height: 48px;
-  grid-template-columns: 48px minmax(0, 1fr) 24px;
-  gap: 7px;
-  margin-bottom: 4px;
-  padding: 4px;
-  border-radius: 7px;
+  height: 45px;
+  grid-template-columns: 45px minmax(0, 1fr) 23px;
+  gap: 6px;
+  margin-bottom: 3px;
+  padding: 3px;
+  border-radius: 6px;
 }
 .project-asset-thumb-v2 {
-  width: 48px;
-  height: 38px;
+  width: 45px;
+  height: 36px;
   border-radius: 5px;
 }
-.project-asset-copy-v2 { gap: 2px; }
-.project-asset-remove-v2 { width: 24px; height: 24px; }
+.project-asset-copy-v2 { gap: 1px; }
+.project-asset-remove-v2 { width: 23px; height: 23px; }
 
-.project-asset-detail { grid-template-rows: minmax(130px, 1fr) auto; }
-.project-asset-meta { padding: 9px 11px; }
-.project-asset-editable-meta { gap: 8px; margin-bottom: 9px; }
-.project-asset-name-field { margin-bottom: 9px; }
+.project-asset-detail { grid-template-rows: minmax(126px, 1fr) auto; }
+.project-asset-meta { padding: 8px 10px; }
+.project-asset-editable-meta { gap: 7px; margin-bottom: 8px; }
+.project-asset-name-field { margin-bottom: 8px; }
 .project-asset-name-field,
 .project-asset-category-field,
-.project-asset-tags-field { gap: 5px 8px; }
+.project-asset-tags-field { gap: 4px 7px; }
 .project-asset-name-field > input,
-.project-asset-tags-field input { padding: 6px 8px; }
-.project-asset-category-options { gap: 2px; padding: 2px; }
-.project-asset-category-options button { padding: 5px 3px; }
-.project-asset-readonly-title { margin: 1px 0 6px; padding-top: 8px; }
-.project-asset-meta dl { gap: 5px 12px; }
-.project-asset-meta dl > div { gap: 6px; }
-.project-asset-fullscreen { right: 8px; top: 8px; width: 29px; height: 29px; }
+.project-asset-tags-field input { padding: 5px 7px; }
+.project-asset-category-options { gap: 0; padding: 0; }
+.project-asset-category-options button { padding: 4px 3px; }
+.project-asset-readonly-title { margin: 1px 0 5px; padding-top: 7px; }
+.project-asset-meta dl { gap: 4px 10px; }
+.project-asset-meta dl > div { gap: 5px; }
+.project-asset-fullscreen { right: 7px; top: 7px; width: 28px; height: 28px; }
 
 /* Generic composer / legacy dense panels still present in the app. */
-.composer-header { min-height: 66px; padding: 9px 14px; }
-.composer-beat-strip { gap: 6px; padding: 7px 14px; }
-.composer-column { padding: 12px; }
-.composer-column > header { margin-bottom: 11px; }
-.composer-field { gap: 5px; margin-bottom: 11px; }
-.prompt-block { margin-bottom: 9px; }
-.prompt-block-head { min-height: 38px; padding: 6px 8px; }
+.composer-header { min-height: 62px; padding: 8px 12px; }
+.composer-beat-strip { gap: 5px; padding: 6px 12px; }
+.composer-column { padding: 10px; }
+.composer-column > header { margin-bottom: 9px; }
+.composer-field { gap: 4px; margin-bottom: 9px; }
+.prompt-block { margin-bottom: 8px; }
+.prompt-block-head { min-height: 36px; padding: 5px 7px; }
 
 @media (max-width: 900px) {
   .sm-dialog:has(.project-config-dialog-v2) {
@@ -222,5 +295,14 @@
 
   .project-asset-manager-v2 {
     grid-template-columns: minmax(200px, 46%) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .sm-dialog:has(.simple-task-editor) {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    min-height: 0;
+    max-height: calc(100vh - 16px);
   }
 }
