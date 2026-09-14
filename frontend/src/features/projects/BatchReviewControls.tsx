@@ -1,7 +1,8 @@
-import { Sparkles, Video, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Sparkles, Video, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button, Checkbox } from "terry-react-ui-library";
 
+import type { VideoBatchEligibility } from "../../gateways/batchReviewGateway";
 import { Dialog } from "../../ui/overlay";
 
 export type PromptBatchOptions = {
@@ -42,12 +43,14 @@ export function BatchPromptDialog({
   open,
   taskCount,
   projectBackgroundAvailable,
+  busy = false,
   onClose,
   onConfirm,
 }: {
   open: boolean;
   taskCount: number;
   projectBackgroundAvailable: boolean;
+  busy?: boolean;
   onClose: () => void;
   onConfirm?: (options: PromptBatchOptions) => void;
 }) {
@@ -73,7 +76,7 @@ export function BatchPromptDialog({
             <span>项目背景</span>
             <Checkbox
               checked={includeProjectBackground}
-              disabled={!projectBackgroundAvailable}
+              disabled={!projectBackgroundAvailable || busy}
               onChange={setIncludeProjectBackground}
               ariaLabel="项目背景"
             />
@@ -82,6 +85,7 @@ export function BatchPromptDialog({
             <span>上一任务摘要</span>
             <Checkbox
               checked={includePreviousTaskSummary}
+              disabled={busy}
               onChange={setIncludePreviousTaskSummary}
               ariaLabel="上一任务摘要"
             />
@@ -94,13 +98,79 @@ export function BatchPromptDialog({
         </div>
 
         <footer>
-          <Button onClick={onClose}>取消</Button>
+          <Button disabled={busy} onClick={onClose}>取消</Button>
           <Button
             variant="accent"
-            disabled={!onConfirm || taskCount < 1}
+            disabled={!onConfirm || taskCount < 1 || busy}
             onClick={() => onConfirm?.({ includeProjectBackground, includePreviousTaskSummary })}
           >
-            开始增强
+            {busy ? "增强中…" : "开始增强"}
+          </Button>
+        </footer>
+      </div>
+    </Dialog>
+  );
+}
+
+function reasonLabel(reason: string) {
+  if (reason === "not-reviewed") return "待检查";
+  if (reason === "busy") return "正在运行";
+  if (reason === "invalid-params") return "参数无效";
+  return reason;
+}
+
+export function BatchVideoDialog({
+  open,
+  selectedCount,
+  eligibility,
+  loading = false,
+  submitting = false,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean;
+  selectedCount: number;
+  eligibility?: VideoBatchEligibility;
+  loading?: boolean;
+  submitting?: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const skippedByReason = new Map<string, number>();
+  eligibility?.skipped.forEach((item) => {
+    skippedByReason.set(item.reason, (skippedByReason.get(item.reason) ?? 0) + 1);
+  });
+  const eligibleCount = eligibility?.eligibleTaskIds.length ?? 0;
+
+  return (
+    <Dialog open={open} title="批量生成视频" onClose={onClose}>
+      <div className="batch-video-dialog">
+        <div className="batch-video-summary-grid">
+          <div><span>已选择</span><strong>{selectedCount}</strong></div>
+          <div className="is-ready"><span>可生成</span><strong>{loading ? "…" : eligibleCount}</strong></div>
+        </div>
+
+        <div className="batch-video-eligibility" aria-label="生成资格">
+          {loading ? (
+            <span>正在检查任务状态…</span>
+          ) : (
+            <>
+              <div className="is-ready"><CheckCircle2 size={14} /><span>{eligibleCount} 个任务将进入视频生成队列</span></div>
+              {[...skippedByReason.entries()].map(([reason, count]) => (
+                <div key={reason} className="is-skipped"><AlertTriangle size={14} /><span>{count} 个{reasonLabel(reason)}，不会提交</span></div>
+              ))}
+            </>
+          )}
+        </div>
+
+        <footer>
+          <Button disabled={submitting} onClick={onClose}>取消</Button>
+          <Button
+            variant="accent"
+            disabled={loading || submitting || eligibleCount < 1}
+            onClick={onConfirm}
+          >
+            {submitting ? "提交中…" : `生成 ${eligibleCount} 个视频`}
           </Button>
         </footer>
       </div>
