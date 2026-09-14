@@ -30,7 +30,7 @@ describe("V0.6 Terry导演工作台", () => {
     expect(screen.queryByRole("navigation", { name: "主导航" })).not.toBeInTheDocument();
   });
 
-  it("进入项目后默认是列表模式，并提供显式新建任务按钮", async () => {
+  it("进入项目后默认是列表模式，并以任务行形式提供新建入口", async () => {
     const user = userEvent.setup();
     renderApp();
     await openFirstProject(user);
@@ -38,7 +38,8 @@ describe("V0.6 Terry导演工作台", () => {
     expect(screen.getByRole("main", { name: "项目工作台" })).toBeInTheDocument();
     expect(screen.getAllByText("异星边境 初到基地").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /表格/ })).toHaveClass("is-active");
-    expect(screen.getByRole("button", { name: /新建任务/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "新建任务卡" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^新建任务$/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "返回项目首页" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "项目配置" })).toBeInTheDocument();
     expect(screen.getByText("#1 特瑞在荒漠驰骋")).toBeInTheDocument();
@@ -105,7 +106,7 @@ describe("V0.6 Terry导演工作台", () => {
     expect(await screen.findByText("#1 特瑞冲入基地")).toBeInTheDocument();
   });
 
-  it("列表和卡片是同一任务集合的两种视图，卡片模式仍保留顶部新建任务栏", async () => {
+  it("列表和卡片是同一任务集合的两种视图，并统一使用内容区新建任务卡", async () => {
     const user = userEvent.setup();
     renderApp();
     await openFirstProject(user);
@@ -114,8 +115,7 @@ describe("V0.6 Terry导演工作台", () => {
 
     expect(screen.getByRole("button", { name: /卡片/ })).toHaveClass("is-active");
     expect(screen.getByRole("button", { name: "新建任务卡" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^新建任务$/ })).toBeInTheDocument();
-    expect(screen.getByText("3 个任务")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^新建任务$/ })).not.toBeInTheDocument();
     expect(screen.getByText("#1 特瑞在荒漠驰骋")).toBeInTheDocument();
     expect(screen.getByText("#2 越过断层台地")).toBeInTheDocument();
     expect(screen.getByText("#3 驶入临时基地")).toBeInTheDocument();
@@ -155,12 +155,12 @@ describe("V0.6 Terry导演工作台", () => {
     expect(within(dialog).getByRole("button", { name: /添加资产/ })).toBeInTheDocument();
   });
 
-  it("列表模式的新建任务按钮直接打开任务编辑弹窗", async () => {
+  it("列表模式的新建任务卡直接打开任务编辑弹窗", async () => {
     const user = userEvent.setup();
     renderApp();
     await openFirstProject(user);
 
-    await user.click(screen.getByRole("button", { name: /新建任务/ }));
+    await user.click(screen.getByRole("button", { name: "新建任务卡" }));
 
     const dialog = screen.getByRole("dialog", { name: /新任务/ });
     expect(within(dialog).getByText("任务配置")).toBeInTheDocument();
