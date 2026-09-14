@@ -9,7 +9,7 @@ import {
   Settings,
   SlidersHorizontal,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { Button } from "terry-react-ui-library";
 
 import {
@@ -26,6 +26,7 @@ import type {
 import { ContextMenu, Dialog } from "../../ui/overlay";
 import { TaskEditorDialog } from "../storyboard/TaskEditorDialog";
 import { updateTaskComposerFields } from "../storyboard/storyboardMutations";
+import { BatchActionBar, BatchPromptDialog } from "./BatchReviewControls";
 import { ProjectConfigPanel } from "./ProjectConfigPanel";
 
 export { CreateProjectDialog, ProjectHome } from "./ProjectWorkspace";
@@ -199,6 +200,9 @@ export function ProjectWorkspace({
 }) {
   const [viewMode, setViewMode] = useState<TaskViewMode>("list");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [batchSelectedTaskIds, setBatchSelectedTaskIds] = useState<Set<string>>(() => new Set());
+  const [batchAnchorIndex, setBatchAnchorIndex] = useState<number | null>(null);
+  const [batchPromptOpen, setBatchPromptOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [loadedEditingTask, setLoadedEditingTask] = useState<GenerationTask | null>(null);
   const [draftTask, setDraftTask] = useState<GenerationTask | null>(null);
@@ -228,6 +232,11 @@ export function ProjectWorkspace({
     setSelectedTaskId(tasks[0]?.id ?? null);
   }, [selectedTaskId, tasks]);
 
+  useEffect(() => {
+    const validIds = new Set(tasks.map((task) => task.id));
+    setBatchSelectedTaskIds((current) => new Set([...current].filter((id) => validIds.has(id))));
+  }, [tasks]);
+
   useEffect(() => setRenameValue(project.title), [project.title]);
 
   const openExistingEditor = async (taskId: string) => {
@@ -253,6 +262,40 @@ export function ProjectWorkspace({
     setDraftTask(null);
     setEditingTaskId(null);
     setLoadedEditingTask(null);
+  };
+
+  const handleTaskSelection = (
+    event: ReactMouseEvent<HTMLButtonElement>,
+    taskId: string,
+    index: number,
+  ) => {
+    setSelectedTaskId(taskId);
+
+    if (event.shiftKey && batchAnchorIndex !== null) {
+      const start = Math.min(batchAnchorIndex, index);
+      const end = Math.max(batchAnchorIndex, index);
+      setBatchSelectedTaskIds(new Set(tasks.slice(start, end + 1).map((task) => task.id)));
+      return;
+    }
+
+    if (event.ctrlKey || event.metaKey) {
+      setBatchAnchorIndex(index);
+      setBatchSelectedTaskIds((current) => {
+        const next = new Set(current);
+        if (next.has(taskId)) next.delete(taskId);
+        else next.add(taskId);
+        return next;
+      });
+      return;
+    }
+
+    setBatchAnchorIndex(index);
+    setBatchSelectedTaskIds(new Set());
+  };
+
+  const clearBatchSelection = () => {
+    setBatchSelectedTaskIds(new Set());
+    setBatchAnchorIndex(null);
   };
 
   const saveTask = (patch: TaskEditorPatch) => {
@@ -327,9 +370,15 @@ export function ProjectWorkspace({
               {tasks.map((task, index) => {
                 const status = displayTaskStatus(task);
                 const versions = resultCount(project.snapshot, task.id);
+                const batchSelected = batchSelectedTaskIds.has(task.id);
                 return (
                   <ContextMenu key={task.id} actions={[{ label: "编辑任务", onSelect: () => openExistingEditor(task.id) }]}>
-                    <button type="button" className={`task-list-row ${selectedTaskId === task.id ? "is-selected" : ""}`} onClick={() => setSelectedTaskId(task.id)} onDoubleClick={() => openExistingEditor(task.id)}>
+                    <button
+                      type="button"
+                      className={`task-list-row ${selectedTaskId === task.id ? "is-selected" : ""} ${batchSelected ? "is-batch-selected" : ""}`}
+                      onClick={(event) => handleTaskSelection(event, task.id, index)}
+                      onDoubleClick={() => openExistingEditor(task.id)}
+                    >
                       <TaskPreview previewUrl={taskPreview(project.snapshot, task)} compact />
                       <div className="task-list-copy"><strong>#{index + 1} {task.title}</strong><span>提示词 {promptSummary(task)}</span></div>
                       <div className="task-list-stats"><span>使用{task.assetBindings.length}个资产</span><span>{versions > 0 ? `${versions}个生成版本` : "无生成结果"}</span></div>
@@ -345,9 +394,15 @@ export function ProjectWorkspace({
               {tasks.map((task, index) => {
                 const status = displayTaskStatus(task);
                 const versions = resultCount(project.snapshot, task.id);
+                const batchSelected = batchSelectedTaskIds.has(task.id);
                 return (
                   <ContextMenu key={task.id} actions={[{ label: "编辑任务", onSelect: () => openExistingEditor(task.id) }]}>
-                    <button type="button" className={`task-card-item ${selectedTaskId === task.id ? "is-selected" : ""}`} onClick={() => setSelectedTaskId(task.id)} onDoubleClick={() => openExistingEditor(task.id)}>
+                    <button
+                      type="button"
+                      className={`task-card-item ${selectedTaskId === task.id ? "is-selected" : ""} ${batchSelected ? "is-batch-selected" : ""}`}
+                      onClick={(event) => handleTaskSelection(event, task.id, index)}
+                      onDoubleClick={() => openExistingEditor(task.id)}
+                    >
                       <div className="task-card-preview-wrap"><TaskPreview previewUrl={taskPreview(project.snapshot, task)} /><span className={`task-card-status is-${status}`}><i />{taskStatusLabel[status]}</span></div>
                       <strong>#{index + 1} {task.title}</strong>
                       <p>提示词 {promptSummary(task)}</p>
@@ -358,6 +413,14 @@ export function ProjectWorkspace({
               })}
             </div>
           )}
+
+          <BatchActionBar
+            selectedCount={batchSelectedTaskIds.size}
+            onEnhance={() => setBatchPromptOpen(true)}
+            onGenerate={() => undefined}
+            onClear={clearBatchSelection}
+            generateDisabled
+          />
         </section>
 
         <TaskInfoPanel snapshot={project.snapshot} task={selectedTask} onPlayResult={(result, task) => setPlaying({ result, task })} />
@@ -377,9 +440,28 @@ export function ProjectWorkspace({
         previousTaskSummary={previousTaskSummary}
         isNewTask={Boolean(draftTask)}
         projectContext={{ description: project.description, useDescriptionForAiPrompt: project.useDescriptionForAiPrompt }}
+        reviewNavigation={draftTask ? undefined : {
+          index: editingTaskIndex,
+          total: tasks.length,
+          canPrevious: editingTaskIndex > 0,
+          canNext: editingTaskIndex >= 0 && editingTaskIndex < tasks.length - 1,
+          onPrevious: () => {
+            if (editingTaskIndex > 0) void openExistingEditor(tasks[editingTaskIndex - 1].id);
+          },
+          onNext: () => {
+            if (editingTaskIndex >= 0 && editingTaskIndex < tasks.length - 1) void openExistingEditor(tasks[editingTaskIndex + 1].id);
+          },
+        }}
         onEnhancePrompt={onEnhancePrompt}
         onClose={closeEditor}
         onSave={saveTask}
+      />
+
+      <BatchPromptDialog
+        open={batchPromptOpen}
+        taskCount={batchSelectedTaskIds.size}
+        projectBackgroundAvailable={project.useDescriptionForAiPrompt && Boolean(project.description.trim())}
+        onClose={() => setBatchPromptOpen(false)}
       />
 
       <ProjectConfigPanel
