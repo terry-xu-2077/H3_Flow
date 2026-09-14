@@ -67,7 +67,38 @@ class MockBatchPromptResponse(ApiModel):
     items: list[MockBatchPromptItem]
 
 
+class MockPromptReviewRequest(ApiModel):
+    action: str = "approve"
+
+
+class MockPromptReviewItem(ApiModel):
+    task_id: str
+    prompt_review_status: str
+    approved_revision: int | None = None
+
+
+class MockPromptReviewList(ApiModel):
+    items: list[MockPromptReviewItem]
+
+
+class MockVideoBatchRequest(ApiModel):
+    task_ids: list[str]
+
+
+class MockVideoBatchSkip(ApiModel):
+    task_id: str
+    reason: str
+
+
+class MockVideoBatchResponse(ApiModel):
+    batch_id: str
+    eligible_task_ids: list[str]
+    skipped: list[MockVideoBatchSkip]
+
+
 def _install_mock_batch_routes(application: FastAPI) -> None:
+    application.state.mock_prompt_reviews = {}
+
     @application.post(
         "/api/v1/projects/{project_id}/prompt-enhancement-batches",
         response_model=MockBatchPromptResponse,
@@ -101,6 +132,7 @@ def _install_mock_batch_routes(application: FastAPI) -> None:
                     mode=editor.generation.mode,
                     context_mode=editor.generation.context_mode,
                 )
+                application.state.mock_prompt_reviews.pop(task_id, None)
                 items.append(
                     MockBatchPromptItem(
                         task_id=task_id,
@@ -123,6 +155,78 @@ def _install_mock_batch_routes(application: FastAPI) -> None:
             batch_id=f"promptbatch-{uuid4().hex[:12]}",
             state=state,
             items=items,
+        )
+
+    @application.get(
+        "/api/v1/projects/{project_id}/prompt-review-state",
+        response_model=MockPromptReviewList,
+        tags=["mock-batch"],
+    )
+    async def prompt_review_state(project_id: str) -> MockPromptReviewList:
+        container = application.state.container
+        reviews: dict[str, int] = application.state.mock_prompt_reviews
+        workspace = container.workspace_query.workspace(project_id)
+        items: list[MockPromptReviewItem] = []
+        for task in workspace.tasks:
+            editor = container.workspace_query.task_editor(project_id, task.id)
+            approved_revision = reviews.get(task.id)
+            approved = approved_revision == editor.revision
+            items.append(
+                MockPromptReviewItem(
+                    task_id=task.id,
+                    prompt_review_status="approved" if approved else "pending",
+                    approved_revision=approved_revision if approved else None,
+                )
+            )
+        return MockPromptReviewList(items=items)
+
+    @application.post(
+        "/api/v1/projects/{project_id}/tasks/{task_id}/prompt-review",
+        response_model=MockPromptReviewItem,
+        tags=["mock-batch"],
+    )
+    async def approve_prompt(
+        project_id: str,
+        task_id: str,
+        payload: MockPromptReviewRequest,
+    ) -> MockPromptReviewItem:
+        if payload.action != "approve":
+            return MockPromptReviewItem(task_id=task_id, prompt_review_status="pending")
+        editor = application.state.container.workspace_query.task_editor(project_id, task_id)
+        application.state.mock_prompt_reviews[task_id] = editor.revision
+        return MockPromptReviewItem(
+            task_id=task_id,
+            prompt_review_status="approved",
+            approved_revision=editor.revision,
+        )
+
+    @application.post(
+        "/api/v1/projects/{project_id}/video-generation-batches",
+        response_model=MockVideoBatchResponse,
+        tags=["mock-batch"],
+    )
+    async def video_generation_batch(
+        project_id: str,
+        payload: MockVideoBatchRequest,
+    ) -> MockVideoBatchResponse:
+        container = application.state.container
+        reviews: dict[str, int] = application.state.mock_prompt_reviews
+        eligible: list[str] = []
+        skipped: list[MockVideoBatchSkip] = []
+        for task_id in payload.task_ids:
+            try:
+                editor = container.workspace_query.task_editor(project_id, task_id)
+            except Exception:
+                skipped.append(MockVideoBatchSkip(task_id=task_id, reason="invalid-params"))
+                continue
+            if reviews.get(task_id) != editor.revision:
+                skipped.append(MockVideoBatchSkip(task_id=task_id, reason="not-reviewed"))
+                continue
+            eligible.append(task_id)
+        return MockVideoBatchResponse(
+            batch_id=f"videobatch-{uuid4().hex[:12]}",
+            eligible_task_ids=eligible,
+            skipped=skipped,
         )
 
 
