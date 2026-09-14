@@ -4,8 +4,11 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
 
 ## 当前开发任务
 
-- [V0.3 Backend Foundation 开发任务](./V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS.md)  
-  **当前后端主执行清单。** 负责把现有 FastAPI 空壳升级为正式模块化单体后端，按 B0-B7 落地 SQLite / Repository、Project / Asset / Task、Frontend Adapter、AI Prompt Enhancement、Job / Result、ComfyUI Provider 和 Runtime Events。开始真实后端开发前必须先读此文档。
+- [V0.4 Batch Production Pipeline 开发任务](./V0.4_BATCH_PRODUCTION_PIPELINE.md)  
+  **当前主执行清单。** 在 V0.3 已完成的后端基础上，实现批量 AI Prompt Enhancement、Prompt Enhancement Queue、人工 Prompt 审核、批量 Video Generation、双 Queue Runtime 与对应测试。默认 Prompt AI Profile 为 Qwen3.8，但 Core 保持 Provider / Model 无关。
+
+- [V0.9 Batch Review Workflow UI 规范](./UI_V0.9_BATCH_REVIEW_WORKFLOW.md)  
+  **当前 UI 增量规范。** 定义工作台批量 AI 增强、Task 状态、多选批量操作、运行中心、连续审核、上一个 / 下一个、确认并下一个，以及批量视频生成前的审核 Gate。
 
 ## 当前必须优先阅读
 
@@ -13,7 +16,7 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
   **AI Prompt Enhancement 的长期最高优先级架构文档。** 定义真实多模态输入、可选项目背景、可选上一任务摘要、H3 / Seedance 独立 Skill、Provider 媒体适配、revision 与 Capability。凡涉及 AI 提示词增强实现，优先读此文档。
 
 - [V0.8 AI 提示词增强与历史版本 UI 规范](./UI_V0.8_AI_PROMPT_ENHANCEMENT.md)  
-  定义 AI 增强历史下拉、空状态、可重复增强、Prompt Source 和用户 / AI 版本选择。涉及 UI 时读此文档；增强后端输入语义以专项架构为准。
+  定义 AI 增强历史下拉、空状态、可重复增强、Prompt Source 和用户 / AI 版本选择。V0.9 在此基础上增加批量增强与连续审核，不替换单任务增强行为。
 
 - [V0.8 后端适配：AI 提示词增强与历史版本](./V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md)  
   **V0.8 版本增量。** 说明历史版本和现有前端过渡字段。长期实现以 AI 提示词增强专项架构为准。
@@ -31,10 +34,15 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
   定义任务标题区、紧凑生成参数、片段承接区间、固定少量候选项使用分段控件，以及下拉菜单宽度规则。
 
 - [V0.5 后端适配新前端方案](./V0.5_BACKEND_FRONTEND_ADAPTER.md)  
-  后端 Frontend Adapter 基线。ProjectSummary、ProjectWorkspaceView、TaskSummary、TaskEditorView、Runtime、推荐 API、SSE 和 Gateway 仍然有效；V0.3 负责将这些契约真正落入后端代码。
+  后端 Frontend Adapter 基线。ProjectSummary、ProjectWorkspaceView、TaskSummary、TaskEditorView、Runtime、推荐 API、SSE 和 Gateway 继续有效；V0.4 在这些 Read Model / Gateway 边界上增加 Batch / Review 状态。
 
 - [Director Mode UI 开发规范](./UI_DIRECTOR_MODE_GUIDE.md)  
   保留“查看与编辑分离、右侧只读、任务编辑使用悬浮窗、防参数墙、全中文”等通用规则。
+
+## 已完成基础版本
+
+- [V0.3 Backend Foundation 开发任务](./V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS.md)  
+  **已完成后端基础与首个 ComfyUI 实机闭环。** B0-B7 已落地：SQLite / Repository、Project / Asset / Task、Frontend Adapter、AI Prompt Enhancement、Job / Result、ComfyUI Provider、Runtime Events 与真实 Frontend Gateway。V0.4 必须建立在这些边界上，不得另起第二套基础设施。
 
 ## 领域与架构文档
 
@@ -59,7 +67,7 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
   第一版基础工程与总体 Phase，仅保留未被后续版本覆盖的内容。
 
 - [开发记录](./DEVELOPMENT_LOG.md)  
-  已实际完成的功能、验证结果和历史记录。
+  已实际完成的功能、验证结果和历史记录。规划中的 V0.4 能力不得提前写成“已完成”。
 
 ---
 
@@ -75,17 +83,31 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
   ├─ 项目配置
   ├─ 列表模式
   ├─ 卡片模式
-  ├─ 共用新建任务工具栏
+  ├─ 共用新建任务 / 批量操作工具栏
   ├─ 右侧只读信息 / Result 预览
-  └─ 底部运行状态
+  └─ 底部 Prompt / Video 运行摘要
        ↓ 双击 / 右键 / 新建任务
 任务编辑弹窗
+       ├─ 上一个 / 下一个任务
        ├─ 用户 / AI增强提示词来源
        ├─ 可视化 / 文本显示模式
-       └─ AI增强历史 / 可重复增强
+       ├─ AI增强历史 / 可重复增强
+       └─ 确认并下一个
 ```
 
 不再使用 `故事板 / 生成 / 素材` 作为三个默认一级页面。
+
+V0.4 的生产心智固定为：
+
+```text
+AI 批量准备 Prompt
+        ↓
+人集中逐项审核
+        ↓
+GPU 批量生成视频
+```
+
+现有单任务 AI 增强与单任务生成能力继续存在，批量流程只是在其上增加正式调度与审核 Gate。
 
 底层领域关系仍然满足：
 
@@ -93,48 +115,73 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
 GenerationTask 可包含 1..N Visual Beats
 Story Order 与 Generation Context 独立
 Task 是可变生产意图
-Job 是不可变执行快照
+Prompt Enhancement Job 是不可变增强输入快照
+Video Job 是不可变生成执行快照
 Result 属于 Job / Task 历史
+Prompt Queue 与 Video Queue 独立
 ```
 
 这些内部关系不能直接决定默认 UI 信息架构。
 
 ---
 
-# 当前后端实施顺序
+# 当前实施顺序
 
 ```text
-V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS
+V0.3 Backend Foundation（已完成）
    ↓
-B0 Backend Skeleton
+V0.4 Batch Production Pipeline
    ↓
-B1 SQLite + Repository
+C0 Prompt Review Foundation
    ↓
-B2 Project / Asset / Task
+C1 Prompt Batch Persistence
    ↓
-B3 Frontend Adapter / Read Model
+C2 Prompt Queue Scheduler / Qwen3.8 default profile
    ↓
-B4 AI Prompt Enhancement
+C3 Batch Review UI
    ↓
-B5 Job / Result
+C4 Batch Video Generation
    ↓
-B6 ComfyUI Video Provider
-   ↓
-B7 Runtime Events / Queue Basics
+C5 Runtime / Regression
 ```
 
-在 B0-B3 未稳定前，不应把真实 Provider / Queue / 数据库逻辑直接绑进 React 组件。
+V0.4 的关键原则：
+
+```text
+单任务增强继续存在
+批量增强不复制 Prompt Enhancement 逻辑
+Prompt Enhancement Queue 由后端持久化 / 调度
+增强完成 != 可以直接批量生成
+人工确认当前有效 Prompt 后才进入默认批量生成 Gate
+Prompt Queue 与 Video Queue 可以同时运行
+```
 
 AI 提示词增强实现优先遵守：
 
 ```text
 AI_PROMPT_ENHANCEMENT_ARCHITECTURE
    ↓
+V0.4_BATCH_PRODUCTION_PIPELINE
+   ↓
 V0.8_BACKEND_AI_PROMPT_ENHANCEMENT（版本迁移）
    ↓
 V0.6_BACKEND_DELTA
    ↓
 V0.5_BACKEND_FRONTEND_ADAPTER
+```
+
+UI 实现优先遵守：
+
+```text
+UI_V0.9_BATCH_REVIEW_WORKFLOW
+   ↓
+UI_V0.8_AI_PROMPT_ENHANCEMENT
+   ↓
+UI_V0.6_PROJECT_CONFIG_H3_EDITOR
+   ↓
+UI_V0.5_PROJECT_WORKSPACE / TASK_EDITOR_REFINEMENT
+   ↓
+UI_DIRECTOR_MODE_GUIDE
 ```
 
 ---
@@ -144,18 +191,20 @@ V0.5_BACKEND_FRONTEND_ADAPTER
 发生冲突时：
 
 1. 明确的新需求 / 最新决策；
-2. **`V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS.md`：当前后端开发执行顺序、Gate 与 Freeze 标准；**
-3. **`AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`：AI 提示词增强输入、媒体、上下文、Skill、Provider 与 revision 架构；**
-4. `UI_V0.8_AI_PROMPT_ENHANCEMENT.md`：AI 增强 UI、历史、Prompt Source；
-5. `UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md`：项目工作台顶部、项目配置、H3 Prompt 与 Result；
-6. `UI_V0.5_PROJECT_WORKSPACE.md`：总体页面结构与交互；
-7. `UI_V0.5_TASK_EDITOR_REFINEMENT.md`：任务配置、Context、控件细化；
-8. `V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md` + `V0.6_BACKEND_DELTA.md` + `V0.5_BACKEND_FRONTEND_ADAPTER.md`：版本适配和前后端边界；
-9. `UI_DIRECTOR_MODE_GUIDE.md`：查看/编辑分离、防参数墙、用户术语等未冲突规则；
-10. `STORYBOARD_TASK_MODEL.md`：领域关系；
-11. `UI_UX_SPEC.md`：通用 UI 行为；
-12. `TEST_STRATEGY.md`：测试与验收；
-13. `ShotMill_产品与架构规划.md`：其他核心架构；
-14. V0.2 / V0.1：历史能力基线。
+2. **`V0.4_BATCH_PRODUCTION_PIPELINE.md`：当前批量生产、Prompt Review、双 Queue 和 Batch Generation 执行顺序、Gate 与 Freeze 标准；**
+3. **`UI_V0.9_BATCH_REVIEW_WORKFLOW.md`：当前工作台批量增强、连续审核、批量生成与运行中心 UI；**
+4. **`AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`：AI 提示词增强输入、媒体、上下文、Skill、Provider 与 revision 长期架构；**
+5. `V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS.md`：已完成的后端基础边界与不可变 Job / Result 基线；
+6. `UI_V0.8_AI_PROMPT_ENHANCEMENT.md`：单任务 AI 增强 UI、历史、Prompt Source；
+7. `UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md`：项目工作台顶部、项目配置、H3 Prompt 与 Result；
+8. `UI_V0.5_PROJECT_WORKSPACE.md`：总体页面结构与交互；
+9. `UI_V0.5_TASK_EDITOR_REFINEMENT.md`：任务配置、Context、控件细化；
+10. `V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md` + `V0.6_BACKEND_DELTA.md` + `V0.5_BACKEND_FRONTEND_ADAPTER.md`：版本适配和前后端边界；
+11. `UI_DIRECTOR_MODE_GUIDE.md`：查看/编辑分离、防参数墙、用户术语等未冲突规则；
+12. `STORYBOARD_TASK_MODEL.md`：领域关系；
+13. `UI_UX_SPEC.md`：通用 UI 行为；
+14. `TEST_STRATEGY.md`：测试与验收；
+15. `ShotMill_产品与架构规划.md`：其他核心架构；
+16. V0.2 / V0.1：历史能力基线。
 
-根目录 `AGENTS.md` 保持为轻量开发导航。
+根目录 `AGENTS.md` 保持为开发导航与不可违反规则汇总。
