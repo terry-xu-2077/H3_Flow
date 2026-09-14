@@ -1,4 +1,4 @@
-import { Clapperboard, Code2, Eye, Pencil, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clapperboard, Code2, Eye, Pencil, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button, SegmentedControl, Select, SlidingTabs } from "terry-react-ui-library";
 
@@ -17,6 +17,15 @@ type TaskEditorPatch = Partial<Pick<GenerationTask,
 
 type TaskEditorSave = { bivarianceHack(patch: TaskEditorPatch): void }["bivarianceHack"];
 
+type ReviewNavigation = {
+  index: number;
+  total: number;
+  canPrevious: boolean;
+  canNext: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
+};
+
 type TaskEditorDialogProps = {
   open: boolean;
   task?: GenerationTask;
@@ -25,6 +34,7 @@ type TaskEditorDialogProps = {
   previousTaskId?: string;
   previousTaskSummary?: string;
   isNewTask?: boolean;
+  reviewNavigation?: ReviewNavigation;
   projectContext?: {
     description: string;
     useDescriptionForAiPrompt: boolean;
@@ -240,6 +250,7 @@ export function TaskEditorDialog({
   previousTaskId,
   previousTaskSummary = "",
   isNewTask = false,
+  reviewNavigation,
   projectContext,
   onEnhancePrompt,
   onClose,
@@ -431,28 +442,41 @@ export function TaskEditorDialog({
   };
 
   const titleNode = (
-    <span className="task-dialog-title">
-      <Clapperboard size={18} aria-hidden="true" />
-      {editingTitle ? (
-        <input
-          autoFocus
-          value={taskTitle}
-          aria-label="任务名称"
-          onChange={(event) => setTaskTitle(event.target.value)}
-          onBlur={() => setEditingTitle(false)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") event.currentTarget.blur();
-            if (event.key === "Escape") {
-              setTaskTitle(task.title);
-              setEditingTitle(false);
-            }
-          }}
-        />
-      ) : (
-        <button type="button" className="task-dialog-title-edit" title="编辑任务名称" onClick={() => setEditingTitle(true)}>
-          <span>{taskTitle || task.title}</span>
-          <Pencil size={14} aria-hidden="true" />
-        </button>
+    <span className="task-dialog-title-shell">
+      <span className="task-dialog-title">
+        <Clapperboard size={18} aria-hidden="true" />
+        {editingTitle ? (
+          <input
+            autoFocus
+            value={taskTitle}
+            aria-label="任务名称"
+            onChange={(event) => setTaskTitle(event.target.value)}
+            onBlur={() => setEditingTitle(false)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
+              if (event.key === "Escape") {
+                setTaskTitle(task.title);
+                setEditingTitle(false);
+              }
+            }}
+          />
+        ) : (
+          <button type="button" className="task-dialog-title-edit" title="编辑任务名称" onClick={() => setEditingTitle(true)}>
+            <span>{taskTitle || task.title}</span>
+            <Pencil size={14} aria-hidden="true" />
+          </button>
+        )}
+      </span>
+      {reviewNavigation && reviewNavigation.index >= 0 && (
+        <span className="task-review-navigation" aria-label="任务审核导航">
+          <button type="button" aria-label="上一个任务" disabled={!reviewNavigation.canPrevious} onClick={reviewNavigation.onPrevious}>
+            <ChevronLeft size={15} />
+          </button>
+          <span>{reviewNavigation.index + 1} / {reviewNavigation.total}</span>
+          <button type="button" aria-label="下一个任务" disabled={!reviewNavigation.canNext} onClick={reviewNavigation.onNext}>
+            <ChevronRight size={15} />
+          </button>
+        </span>
       )}
     </span>
   );
