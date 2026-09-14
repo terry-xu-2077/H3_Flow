@@ -1,6 +1,6 @@
 import { Clapperboard, Code2, Eye, Pencil, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "terry-react-ui-library";
+import { Button, SegmentedControl, Select } from "terry-react-ui-library";
 
 import { H3PromptEditor, type H3PromptViewMode } from "../../components/H3PromptEditor";
 import type { PromptAsset } from "../../components/PromptAssetEditor";
@@ -161,19 +161,15 @@ function SegmentedChoice({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="simple-segmented-control" role="group" aria-label={label}>
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          className={value === option.value ? "is-active" : ""}
-          aria-pressed={value === option.value}
-          onClick={() => onChange(option.value)}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
+    <SegmentedControl
+      value={value}
+      options={options}
+      onChange={onChange}
+      ariaLabel={label}
+      fluid
+      compact
+      className="simple-segmented-control"
+    />
   );
 }
 
@@ -530,44 +526,46 @@ export function TaskEditorDialog({
 
           <section className="simple-context-section">
             <h3>上下文承接</h3>
-            <div className="simple-context-tabs" role="tablist" aria-label="上下文承接方式">
-              {(["片段承接", "尾帧承接", "不承接"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  role="tab"
-                  aria-selected={contextMode === mode}
-                  className={contextMode === mode ? "is-active" : ""}
-                  onClick={() => setContextMode(mode)}
-                >
-                  {mode}
-                </button>
-              ))}
+            <SegmentedControl<ContextMode>
+              value={contextMode}
+              onChange={setContextMode}
+              ariaLabel="上下文承接方式"
+              presentation="tabs"
+              fluid
+              compact
+              className="simple-context-tabs"
+              options={[
+                { value: "片段承接", label: "片段承接" },
+                { value: "尾帧承接", label: "尾帧承接" },
+                { value: "不承接", label: "不承接" },
+              ]}
+            />
+
+            <div className="simple-context-detail-slot">
+              {contextMode === "片段承接" && (
+                <div className="simple-context-params simple-context-interval">
+                  <span className="simple-context-param-label">承接区间</span>
+                  <ContinuationRange
+                    maxSeconds={previousDuration}
+                    start={contextStartSeconds}
+                    end={contextEndSeconds}
+                    onChange={(start, end) => {
+                      setContextStartSeconds(start);
+                      setContextEndSeconds(end);
+                    }}
+                  />
+                  <small>区间来自上一任务；新任务默认选择上一任务末尾 1 秒，可拖动两端调整。</small>
+                </div>
+              )}
+
+              {contextMode === "尾帧承接" && (
+                <p className="simple-context-note">使用上一任务最终帧作为本任务的起始视觉参考。</p>
+              )}
+
+              {contextMode === "不承接" && (
+                <p className="simple-context-note">本任务独立生成，不引用上一任务的连续性信息。</p>
+              )}
             </div>
-
-            {contextMode === "片段承接" && (
-              <div className="simple-context-params simple-context-interval">
-                <span className="simple-context-param-label">承接区间</span>
-                <ContinuationRange
-                  maxSeconds={previousDuration}
-                  start={contextStartSeconds}
-                  end={contextEndSeconds}
-                  onChange={(start, end) => {
-                    setContextStartSeconds(start);
-                    setContextEndSeconds(end);
-                  }}
-                />
-                <small>区间来自上一任务；新任务默认选择上一任务末尾 1 秒，可拖动两端调整。</small>
-              </div>
-            )}
-
-            {contextMode === "尾帧承接" && (
-              <p className="simple-context-note">使用上一任务最终帧作为本任务的起始视觉参考。</p>
-            )}
-
-            {contextMode === "不承接" && (
-              <p className="simple-context-note">本任务独立生成，不引用上一任务的连续性信息。</p>
-            )}
           </section>
         </aside>
 
@@ -575,32 +573,48 @@ export function TaskEditorDialog({
           <header className="simple-prompt-head">
             <div className="simple-prompt-title-group">
               <h2>提示词编辑</h2>
-              <div className="simple-prompt-view-tabs" role="tablist" aria-label={`${promptMode === "ai" ? "AI增强" : "用户"}提示词显示模式`}>
-                <button type="button" role="tab" aria-selected={activeViewMode === "visual"} className={activeViewMode === "visual" ? "is-active" : ""} onClick={() => setActiveViewMode("visual")}><Eye size={13} /> 可视化</button>
-                <button type="button" role="tab" aria-selected={activeViewMode === "text"} className={activeViewMode === "text" ? "is-active" : ""} onClick={() => setActiveViewMode("text")}><Code2 size={13} /> 文本</button>
-              </div>
+              <SegmentedControl<H3PromptViewMode>
+                value={activeViewMode}
+                onChange={setActiveViewMode}
+                ariaLabel={`${promptMode === "ai" ? "AI增强" : "用户"}提示词显示模式`}
+                presentation="tabs"
+                compact
+                className="simple-prompt-view-tabs"
+                options={[
+                  { value: "visual", label: "可视化", icon: <Eye size={13} /> },
+                  { value: "text", label: "文本", icon: <Code2 size={13} /> },
+                ]}
+              />
             </div>
 
             {promptMode === "ai" && (
-              <label className="simple-ai-history-select">
-                <select
-                  aria-label="AI提示词增强记录"
+              <div className="simple-ai-history-select">
+                <Select
                   value={selectedAiHistoryId}
                   disabled={!aiHistory.length}
-                  onChange={(event) => selectAiHistory(event.target.value)}
-                >
-                  {!aiHistory.length && <option value="">暂无增强记录</option>}
-                  {aiHistory.map((item, index) => (
-                    <option key={item.id} value={item.id}>{formatHistoryLabel(item, index, aiHistory.length)}</option>
-                  ))}
-                </select>
-              </label>
+                  onChange={selectAiHistory}
+                  options={aiHistory.length
+                    ? aiHistory.map((item, index) => ({
+                        value: item.id,
+                        label: formatHistoryLabel(item, index, aiHistory.length),
+                      }))
+                    : [{ value: "", label: "暂无增强记录" }]}
+                />
+              </div>
             )}
 
-            <div className="simple-prompt-tabs" role="tablist" aria-label="提示词版本">
-              <button type="button" role="tab" aria-selected={promptMode === "user"} className={promptMode === "user" ? "is-active" : ""} onClick={() => setPromptMode("user")}>用户</button>
-              <button type="button" role="tab" aria-selected={promptMode === "ai"} className={promptMode === "ai" ? "is-active" : ""} onClick={() => setPromptMode("ai")}><Sparkles size={13} /> AI 增强</button>
-            </div>
+            <SegmentedControl<PromptMode>
+              value={promptMode}
+              onChange={setPromptMode}
+              ariaLabel="提示词版本"
+              presentation="tabs"
+              compact
+              className="simple-prompt-tabs"
+              options={[
+                { value: "user", label: "用户" },
+                { value: "ai", label: "AI 增强", icon: <Sparkles size={13} /> },
+              ]}
+            />
           </header>
 
           <div className={`simple-prompt-body ${promptMode === "ai" ? "is-ai" : ""}`}>
@@ -628,14 +642,14 @@ export function TaskEditorDialog({
                   </div>
                 )}
                 {enhanceError && <div className="simple-ai-enhance-error" role="alert">{enhanceError}</div>}
-                <button
-                  type="button"
+                <Button
                   className="simple-ai-enhance-button"
+                  variant="accent"
                   disabled={isEnhancing || !userPrompt.trim()}
                   onClick={enhancePrompt}
                 >
                   <Sparkles size={14} /> {isEnhancing ? "增强中…" : "增强"}
-                </button>
+                </Button>
               </>
             )}
           </div>
