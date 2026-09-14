@@ -90,10 +90,13 @@ class MockVideoBatchSkip(ApiModel):
     reason: str
 
 
-class MockVideoBatchResponse(ApiModel):
-    batch_id: str
+class MockVideoBatchEligibility(ApiModel):
     eligible_task_ids: list[str]
     skipped: list[MockVideoBatchSkip]
+
+
+class MockVideoBatchResponse(MockVideoBatchEligibility):
+    batch_id: str
 
 
 def _install_mock_batch_routes(application: FastAPI) -> None:
@@ -108,8 +111,6 @@ def _install_mock_batch_routes(application: FastAPI) -> None:
         project_id: str,
         payload: MockBatchPromptRequest,
     ) -> MockBatchPromptResponse:
-        """Exercise the target batch UX through the same HTTP gateway as production."""
-
         container = application.state.container
         items: list[MockBatchPromptItem] = []
         for task_id in payload.task_ids:
@@ -140,7 +141,7 @@ def _install_mock_batch_routes(application: FastAPI) -> None:
                         revision_id=revision.id,
                     )
                 )
-            except Exception as exc:  # deterministic dev API should expose per-task failures
+            except Exception as exc:
                 items.append(
                     MockBatchPromptItem(
                         task_id=task_id,
@@ -200,20 +201,12 @@ def _install_mock_batch_routes(application: FastAPI) -> None:
             approved_revision=editor.revision,
         )
 
-    @application.post(
-        "/api/v1/projects/{project_id}/video-generation-batches",
-        response_model=MockVideoBatchResponse,
-        tags=["mock-batch"],
-    )
-    async def video_generation_batch(
-        project_id: str,
-        payload: MockVideoBatchRequest,
-    ) -> MockVideoBatchResponse:
+    def evaluate_video_batch(project_id: str, task_ids: list[str]) -> MockVideoBatchEligibility:
         container = application.state.container
         reviews: dict[str, int] = application.state.mock_prompt_reviews
         eligible: list[str] = []
         skipped: list[MockVideoBatchSkip] = []
-        for task_id in payload.task_ids:
+        for task_id in task_ids:
             try:
                 editor = container.workspace_query.task_editor(project_id, task_id)
             except Exception:
@@ -223,10 +216,33 @@ def _install_mock_batch_routes(application: FastAPI) -> None:
                 skipped.append(MockVideoBatchSkip(task_id=task_id, reason="not-reviewed"))
                 continue
             eligible.append(task_id)
+        return MockVideoBatchEligibility(eligible_task_ids=eligible, skipped=skipped)
+
+    @application.post(
+        "/api/v1/projects/{project_id}/video-generation-batches/eligibility",
+        response_model=MockVideoBatchEligibility,
+        tags=["mock-batch"],
+    )
+    async def video_generation_batch_eligibility(
+        project_id: str,
+        payload: MockVideoBatchRequest,
+    ) -> MockVideoBatchEligibility:
+        return evaluate_video_batch(project_id, payload.task_ids)
+
+    @application.post(
+        "/api/v1/projects/{project_id}/video-generation-batches",
+        response_model=MockVideoBatchResponse,
+        tags=["mock-batch"],
+    )
+    async def video_generation_batch(
+        project_id: str,
+        payload: MockVideoBatchRequest,
+    ) -> MockVideoBatchResponse:
+        eligibility = evaluate_video_batch(project_id, payload.task_ids)
         return MockVideoBatchResponse(
             batch_id=f"videobatch-{uuid4().hex[:12]}",
-            eligible_task_ids=eligible,
-            skipped=skipped,
+            eligible_task_ids=eligibility.eligible_task_ids,
+            skipped=eligibility.skipped,
         )
 
 
@@ -255,8 +271,6 @@ def _settings(data_root: Path) -> Settings:
 
 
 async def seed_mock_scenario(application: FastAPI) -> None:
-    """Create the backend-owned default UI scenario in an empty mock database."""
-
     container = application.state.container
     if container.workspace_query.list_projects():
         return
@@ -357,8 +371,6 @@ async def seed_mock_scenario(application: FastAPI) -> None:
 
 
 async def create_mock_app(data_root: Path) -> FastAPI:
-    """Build a fresh stateful fake API using the production routes plus target UI contracts."""
-
     selected_settings = _settings(data_root)
     selected_settings.data_root.mkdir(parents=True, exist_ok=True)
     upgrade_database(selected_settings.database_url)
