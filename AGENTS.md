@@ -86,8 +86,8 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 - **全局默认采用“专业桌面工具的紧凑信息密度”。提高密度优先收紧窗口/面板留白、padding、gap、行高、卡片高度和控件高度，不通过缩小正文字号、大量压缩可读性来换取空间。**
 - **窗口尺寸必须与实际内容量匹配。内容较少时不得为了“高级感”制造大面积空白；对象列表（Task / Asset / Result 等）应优先使用紧凑行高和稳定间距，让同屏可见项更多。媒体预览可以保留视觉面积，但参数、元数据和工具栏应保持紧凑。**
 - **Dialog / Overlay 的外框尺寸必须稳定。用户/AI、可视化/文本、上下文承接模式等内部标签切换只能替换或重排既定内容区，不得导致整个窗口忽大忽小。**
-- **可跨项目复用的基础控件必须优先进入 `Terry_React_UI_Library`，ShotMill 不得为 Button、Select、SegmentedControl/标签组、Checkbox、Switch、Slider、TextField、Tooltip 等再维护一套平行实现。只有 Task Card、H3 Prompt Editor、Result Preview、运行中心等业务专属组件留在 ShotMill。**
-- **标签组 / SegmentedControl 默认至少由 2 个选项组成：组内无间隙；只允许最左、最右外侧边缘使用克制圆角；相邻内部边缘保持直角，形成一个连续分段控件。不得把每个标签做成彼此分离的大圆角 Pill。**
+- **可跨项目复用的基础控件必须优先进入 `Terry_React_UI_Library`，ShotMill 不得为 Button、Select、SegmentedControl、SlidingTabs、Checkbox、Switch、Slider、TextField、Tooltip 等再维护一套平行实现。只有 Task Card、H3 Prompt Editor、Result Preview、运行中心等业务专属组件留在 ShotMill。UI 库新增公开组件必须同步挂到 UI Showcase。**
+- **标签控件分为两类且语义固定：`SegmentedControl` 用于用户/AI、可视化/文本等高层模式或视图切换，组内等宽、两端完整半圆，选中项整块轻微提亮且文字/图标变 Accent，不使用底部亮条；`SlidingTabs` 用于分辨率、质量、生成模式、上下文承接等参数密集区域，无圆角外框，底部保留暗轨道，Accent 指示条滑动到当前项，当前文字/图标同步变 Accent。不得在参数密集区滥用胶囊标签。**
 - 默认一级结构只有 **项目首页** 与 **项目工作台**；任务编辑使用 Overlay。
 - 首页只负责打开 / 新建项目，不展示任务内部参数。
 - 项目页左上是 **返回首页**，必须有房子图标，不再用产品标题伪装导航。
