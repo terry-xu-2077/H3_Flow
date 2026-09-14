@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from uuid import uuid4
 
 from fastapi import FastAPI
 
@@ -16,6 +17,7 @@ from shotmill.domain.providers import (
     PromptAIRequest,
     PromptAIResponse,
 )
+from shotmill.frontend_adapter.models import ApiModel
 from shotmill.persistence.migrations import upgrade_database
 
 
@@ -42,7 +44,85 @@ class MockPromptAIProvider:
                 "保持光线、人物与空间关系前后一致。"
             ).strip(),
             provider_id=self.id,
-            model_id="deterministic-contract-v1",
+            model_id="qwen3.8-mock-contract-v1",
+        )
+
+
+class MockBatchPromptRequest(ApiModel):
+    task_ids: list[str]
+    include_project_background: bool = True
+    include_previous_task_summary: bool = True
+
+
+class MockBatchPromptItem(ApiModel):
+    task_id: str
+    state: str
+    revision_id: str | None = None
+    error: str | None = None
+
+
+class MockBatchPromptResponse(ApiModel):
+    batch_id: str
+    state: str
+    items: list[MockBatchPromptItem]
+
+
+def _install_mock_batch_routes(application: FastAPI) -> None:
+    @application.post(
+        "/api/v1/projects/{project_id}/prompt-enhancement-batches",
+        response_model=MockBatchPromptResponse,
+        tags=["mock-batch"],
+    )
+    async def batch_prompt_enhancement(
+        project_id: str,
+        payload: MockBatchPromptRequest,
+    ) -> MockBatchPromptResponse:
+        """Exercise the target batch UX through the same HTTP gateway as production."""
+
+        container = application.state.container
+        items: list[MockBatchPromptItem] = []
+        for task_id in payload.task_ids:
+            try:
+                editor = container.workspace_query.task_editor(project_id, task_id)
+                revision = await container.prompt_enhancement_service.enhance(
+                    project_id,
+                    task_id,
+                    target="minimax-h3",
+                    user_prompt=editor.user_prompt,
+                    media=tuple(
+                        EnhancementMedia(binding.asset_id, binding.reference, binding.role)
+                        for binding in editor.asset_bindings
+                    ),
+                    context=EnhancementContextOptions(
+                        include_project_background=payload.include_project_background,
+                        include_previous_task_summary=payload.include_previous_task_summary,
+                    ),
+                    duration_seconds=editor.duration_seconds,
+                    mode=editor.generation.mode,
+                    context_mode=editor.generation.context_mode,
+                )
+                items.append(
+                    MockBatchPromptItem(
+                        task_id=task_id,
+                        state="completed",
+                        revision_id=revision.id,
+                    )
+                )
+            except Exception as exc:  # deterministic dev API should expose per-task failures
+                items.append(
+                    MockBatchPromptItem(
+                        task_id=task_id,
+                        state="failed",
+                        error=str(exc),
+                    )
+                )
+
+        completed = sum(item.state == "completed" for item in items)
+        state = "completed" if completed == len(items) else "failed" if completed == 0 else "partial"
+        return MockBatchPromptResponse(
+            batch_id=f"promptbatch-{uuid4().hex[:12]}",
+            state=state,
+            items=items,
         )
 
 
@@ -60,7 +140,7 @@ def _settings(data_root: Path) -> Settings:
     resolved = data_root.resolve()
     return Settings(
         app_name="ShotMill Mock API",
-        api_version="0.3-mock",
+        api_version="0.4-mock",
         data_root=resolved,
         database_url=f"sqlite+pysqlite:///{(resolved / 'shotmill-mock.db').as_posix()}",
         auto_migrate=True,
@@ -166,13 +246,14 @@ async def seed_mock_scenario(application: FastAPI) -> None:
         SaveTaskData(
             title="待补充任务",
             summary="用于检查空白和未完成状态。",
+            user_prompt="补充镜头动作与构图，保持雨夜仓库的连续氛围。",
             duration_seconds=6,
         ),
     )
 
 
 async def create_mock_app(data_root: Path) -> FastAPI:
-    """Build a fresh stateful fake API using the production routes and schemas."""
+    """Build a fresh stateful fake API using the production routes plus target UI contracts."""
 
     selected_settings = _settings(data_root)
     selected_settings.data_root.mkdir(parents=True, exist_ok=True)
@@ -181,5 +262,6 @@ async def create_mock_app(data_root: Path) -> FastAPI:
         selected_settings,
         prompt_provider=MockPromptAIProvider(),
     )
+    _install_mock_batch_routes(application)
     await seed_mock_scenario(application)
     return application
