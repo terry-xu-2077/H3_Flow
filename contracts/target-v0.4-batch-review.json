@@ -1,0 +1,72 @@
+{
+  "version": "0.4-target",
+  "status": "frontend-and-mock-first",
+  "productFlow": [
+    "batch-select-tasks",
+    "batch-enhance-prompts",
+    "review-prompts-one-by-one",
+    "approve-reviewed-prompts",
+    "batch-generate-reviewed-videos"
+  ],
+  "endpoints": {
+    "POST /api/v1/projects/{projectId}/prompt-enhancement-batches": {
+      "request": {
+        "taskIds": ["string"],
+        "includeProjectBackground": "boolean",
+        "includePreviousTaskSummary": "boolean"
+      },
+      "response": {
+        "batchId": "string",
+        "state": "completed|partial|failed",
+        "items": [
+          {
+            "taskId": "string",
+            "state": "completed|failed",
+            "revisionId": "string?",
+            "error": "string?"
+          }
+        ]
+      },
+      "mockImplemented": true,
+      "productionImplemented": false
+    },
+    "POST /api/v1/projects/{projectId}/tasks/{taskId}/prompt-review": {
+      "request": {
+        "action": "approve"
+      },
+      "response": {
+        "taskId": "string",
+        "promptReviewStatus": "approved",
+        "approvedRevision": "number"
+      },
+      "mockImplemented": false,
+      "productionImplemented": false
+    },
+    "POST /api/v1/projects/{projectId}/video-generation-batches": {
+      "request": {
+        "taskIds": ["string"]
+      },
+      "response": {
+        "batchId": "string",
+        "eligibleTaskIds": ["string"],
+        "skipped": [
+          {
+            "taskId": "string",
+            "reason": "not-reviewed|busy|invalid-params"
+          }
+        ]
+      },
+      "mockImplemented": false,
+      "productionImplemented": false
+    }
+  },
+  "readModelTarget": {
+    "TaskSummary": {
+      "promptEnhancementStatus": "idle|queued|running|completed|failed",
+      "promptReviewStatus": "pending|approved",
+      "videoGenerationStatus": "idle|queued|running|completed|failed",
+      "hasActivePromptJob": "boolean",
+      "hasActiveVideoJob": "boolean"
+    }
+  }
+}
