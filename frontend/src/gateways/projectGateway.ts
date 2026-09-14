@@ -119,6 +119,23 @@ type PromptEnhancementPreviewView = {
   modelId?: string;
 };
 
+export type BatchPromptEnhancementRequest = {
+  taskIds: string[];
+  includeProjectBackground: boolean;
+  includePreviousTaskSummary: boolean;
+};
+
+export type BatchPromptEnhancementResponse = {
+  batchId: string;
+  state: "completed" | "partial" | "failed";
+  items: Array<{
+    taskId: string;
+    state: "completed" | "failed";
+    revisionId?: string;
+    error?: string;
+  }>;
+};
+
 export type SaveTaskInput = {
   title: string;
   summary: string;
@@ -163,6 +180,7 @@ export interface ProjectGateway {
   deleteAsset(projectId: string, assetId: string): Promise<void>;
   listPromptRevisions(projectId: string, taskId: string): Promise<PromptRevisionView[]>;
   enhancePrompt(projectId: string, request: PromptEnhancementRequest): Promise<PromptEnhancementResponse>;
+  batchEnhancePrompts(projectId: string, request: BatchPromptEnhancementRequest): Promise<BatchPromptEnhancementResponse>;
   subscribeProject(projectId: string, listener: (event: ProjectEvent) => void): () => void;
 }
 
@@ -422,6 +440,17 @@ export class HttpProjectGateway implements ProjectGateway {
       prompt: revision.prompt,
       taskRevision: editor.revision,
     };
+  }
+
+  batchEnhancePrompts(projectId: string, input: BatchPromptEnhancementRequest) {
+    return request<BatchPromptEnhancementResponse>(
+      `/projects/${encodeURIComponent(projectId)}/prompt-enhancement-batches`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      },
+    );
   }
 
   subscribeProject(projectId: string, listener: (event: ProjectEvent) => void) {
