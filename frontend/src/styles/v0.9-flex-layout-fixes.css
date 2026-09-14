@@ -145,6 +145,17 @@
   min-width: 0;
 }
 
+.project-config-dialog-v2 .project-config-info {
+  overflow: visible;
+  align-content: start;
+}
+
+.project-config-dialog-v2 .project-config-info textarea {
+  min-height: 88px;
+  height: clamp(96px, 19vh, 150px);
+  resize: none;
+}
+
 .project-config-dialog-v2 .project-config-actions {
   grid-column: 1 / -1;
   grid-row: 2;
@@ -152,7 +163,7 @@
 
 .project-asset-manager-v2 {
   min-width: 0;
-  grid-template-columns: minmax(260px, 44%) minmax(0, 1fr);
+  grid-template-columns: minmax(280px, 48%) minmax(0, 1fr);
   gap: clamp(9px, 1.2vw, 14px);
 }
 
@@ -186,7 +197,7 @@
   }
 
   .project-asset-manager-v2 {
-    grid-template-columns: minmax(210px, 46%) minmax(0, 1fr);
+    grid-template-columns: minmax(210px, 48%) minmax(0, 1fr);
     gap: 9px;
   }
 
