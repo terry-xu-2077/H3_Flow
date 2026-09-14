@@ -1,6 +1,6 @@
 import { Clapperboard, Code2, Eye, Pencil, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Button, SegmentedControl, Select } from "terry-react-ui-library";
+import { Button, SegmentedControl, Select, SlidingTabs } from "terry-react-ui-library";
 
 import { H3PromptEditor, type H3PromptViewMode } from "../../components/H3PromptEditor";
 import type { PromptAsset } from "../../components/PromptAssetEditor";
@@ -149,7 +149,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function SegmentedChoice({
+function ParameterTabs({
   label,
   value,
   options,
@@ -161,14 +161,14 @@ function SegmentedChoice({
   onChange: (value: string) => void;
 }) {
   return (
-    <SegmentedControl
+    <SlidingTabs
       value={value}
       options={options}
       onChange={onChange}
       ariaLabel={label}
       fluid
       compact
-      className="simple-segmented-control"
+      className="simple-parameter-tabs"
     />
   );
 }
@@ -473,7 +473,7 @@ export function TaskEditorDialog({
             <h3>生成参数</h3>
             <div className="simple-choice-field">
               <span>分辨率</span>
-              <SegmentedChoice
+              <ParameterTabs
                 label="分辨率"
                 value={resolution}
                 onChange={setResolution}
@@ -486,7 +486,7 @@ export function TaskEditorDialog({
             </div>
             <div className="simple-choice-field">
               <span>质量</span>
-              <SegmentedChoice
+              <ParameterTabs
                 label="质量档位"
                 value={quality}
                 onChange={setQuality}
@@ -513,7 +513,7 @@ export function TaskEditorDialog({
 
           <section>
             <h3>生成模式</h3>
-            <SegmentedChoice
+            <ParameterTabs
               label="生成模式"
               value={generationMode}
               onChange={setGenerationMode}
@@ -526,11 +526,10 @@ export function TaskEditorDialog({
 
           <section className="simple-context-section">
             <h3>上下文承接</h3>
-            <SegmentedControl<ContextMode>
+            <SlidingTabs<ContextMode>
               value={contextMode}
               onChange={setContextMode}
               ariaLabel="上下文承接方式"
-              presentation="tabs"
               fluid
               compact
               className="simple-context-tabs"
