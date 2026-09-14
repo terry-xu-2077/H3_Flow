@@ -45,7 +45,7 @@ Windows 真实联调直接双击根目录的 `启动 ShotMill（前端+后端）
 - 当前会话内的保存和编辑真实生效；关闭启动器后临时数据自动清理。
 - 不需要启动 ComfyUI，也不会调用外部 Prompt AI。
 
-假数据 API 地址为 `http://127.0.0.1:8766`。详细契约见 [`contracts/README.md`](contracts/README.md)。
+假数据 API 默认地址为 `http://127.0.0.1:8766`。启动器会记录自己创建的进程 ID 和启动时间，下次运行先精确清理异常退出留下的服务；对没有记录的占用者还会验证服务页面、进程类型和项目路径，只有确认属于当前 ShotMill 项目才会结束，否则安全顺延到空闲端口。详细契约见 [`contracts/README.md`](contracts/README.md)。
 
 ## 其他启动方式
 

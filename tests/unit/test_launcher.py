@@ -12,6 +12,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 POWERSHELL_7 = Path(r"C:\Program Files\PowerShell\7\pwsh.exe")
 LAUNCHER = ROOT / "scripts" / "start-dev.ps1"
+MOCK_LAUNCHER = ROOT / "scripts" / "start-mock-ui.ps1"
 BACKEND_RUNNER = ROOT / "scripts" / "run-backend.ps1"
 REUSE_CONFIG = ROOT / "frontend" / "src-tauri" / "tauri.reuse-dev.conf.json"
 
@@ -109,6 +110,55 @@ def test_launcher_contains_managed_visible_backend_lifecycle() -> None:
     assert "ParentProcessId" in runner
     assert "launcher process disappeared; stopping backend process tree" in runner
     assert "taskkill.exe /PID" in runner
+
+
+@pytest.mark.skipif(sys.platform != "win32" or not POWERSHELL_7.exists(), reason="Windows launcher")
+def test_mock_launcher_falls_back_when_the_requested_ui_port_is_occupied() -> None:
+    occupied_server = ThreadingHTTPServer(("127.0.0.1", 0), _ProbeHandler)
+    occupied_thread = threading.Thread(target=occupied_server.serve_forever, daemon=True)
+    occupied_thread.start()
+    try:
+        completed = subprocess.run(
+            [
+                str(POWERSHELL_7),
+                "-NoLogo",
+                "-NoProfile",
+                "-File",
+                str(MOCK_LAUNCHER),
+                "-CheckOnly",
+                "-DevPort",
+                str(occupied_server.server_port),
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=15,
+        )
+    finally:
+        occupied_server.shutdown()
+        occupied_server.server_close()
+        occupied_thread.join(timeout=5)
+
+    output = f"{completed.stdout}\n{completed.stderr}"
+    assert completed.returncode == 0
+    assert "is already in use; using UI port" in output
+    assert "[CHECK] Mock launcher preflight passed." in output
+
+
+def test_mock_launcher_only_cleans_verified_project_services() -> None:
+    launcher = MOCK_LAUNCHER.read_text(encoding="utf-8")
+
+    assert "Stop-VerifiedResidual" in launcher
+    assert "Test-ShotMillFrontendPort" in launcher
+    assert "Test-ShotMillMockApiPort" in launcher
+    assert "[regex]::Escape($Root)" in launcher
+    assert "$Owner.Name -eq 'node.exe'" in launcher
+    assert "$Owner.Name -eq 'python.exe'" in launcher
+    assert "mock-ui-processes.json" in launcher
+    assert "startTimeUtcTicks" in launcher
+    assert "Stop-TrackedResidual" in launcher
 
 
 def test_tauri_reuse_config_disables_the_duplicate_frontend_command() -> None:

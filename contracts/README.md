@@ -9,6 +9,8 @@ ShotMill 前端只有一套数据入口：`HttpProjectGateway`。它始终请求
 | 真实数据 | `启动 ShotMill（前端+后端）.bat` | `127.0.0.1:8765` | SQLite、真实 Prompt AI 配置、ComfyUI 联调 |
 | 假数据 | `启动 ShotMill（假数据）.bat` | `127.0.0.1:8766` | UI 打磨、空状态、保存、资产、AI 增强交互 |
 
+启动器会在 `.shotmill/mock-ui-processes.json` 记录自己创建的进程 ID 与启动时间；即使上次窗口异常退出，下次启动也能精确清理，不会不断累积服务。若 `1420` 仍被占用，启动器还会同时核验页面内容、进程类型和当前项目路径。确认是当前 ShotMill 遗留的 Vite 服务后才自动结束它并继续使用 `1420`；无法确认身份时不会误杀，而是选择下一个空闲 UI 端口。`8766` 上遗留的 ShotMill 假 API 采用同样处理。
+
 假 API 由后端代码创建，复用正式路由、请求/响应模型、Frontend Adapter、SQLite 与业务 Service。它只替换数据目录和外部 Provider：
 
 - 每次启动创建独立临时数据库，退出后自动清理，下次启动恢复标准场景。
