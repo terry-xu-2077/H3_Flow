@@ -22,6 +22,7 @@ import "./styles/v0.8-ai-enhance.css";
 import "./styles/v0.9-workspace-polish.css";
 import "./styles/v0.9-flex-layout-fixes.css";
 import "./styles/v0.9-compact-density.css";
+import "./styles/task-editor-feedback.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
