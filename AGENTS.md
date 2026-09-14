@@ -6,6 +6,7 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 
 - **当前主开发任务：`docs/V0.4_BATCH_PRODUCTION_PIPELINE.md`**
 - **当前批量审核 UI：`docs/UI_V0.9_BATCH_REVIEW_WORKFLOW.md`**
+- **UI 实现红线：`docs/UI_DEVELOPMENT_RULES.md`**
 - 已完成后端基础：`docs/V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS.md`
 - **AI 提示词增强专项架构：`docs/AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`**
 - AI 增强 UI 基线：`docs/UI_V0.8_AI_PROMPT_ENHANCEMENT.md`
@@ -22,7 +23,7 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 - 测试与故障注入：`docs/TEST_STRATEGY.md`
 - 文档索引与冲突优先级：`docs/README.md`
 
-当前开发必须先读 V0.4。涉及批量 Prompt Enhancement、人工 Prompt 审核、批量 Video Generation、双 Queue Runtime 或 Qwen3.8 默认 Prompt AI Profile 时，还必须读 `UI_V0.9_BATCH_REVIEW_WORKFLOW.md` 与 `AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`。旧文档里的“故事板 / 生成 / 素材”三个一级页面已被当前 UI 覆盖，不得恢复。
+当前开发必须先读 V0.4。**任何 UI / CSS / Overlay / Dialog / UI Library 集成修改都必须先读 `docs/UI_DEVELOPMENT_RULES.md` 与 `docs/UI_UX_SPEC.md`。** 涉及批量 Prompt Enhancement、人工 Prompt 审核、批量 Video Generation、双 Queue Runtime 或 Qwen3.8 默认 Prompt AI Profile 时，还必须读 `UI_V0.9_BATCH_REVIEW_WORKFLOW.md` 与 `AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`。旧文档里的“故事板 / 生成 / 素材”三个一级页面已被当前 UI 覆盖，不得恢复。
 
 ## 目录职责
 
@@ -87,6 +88,8 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 - **窗口尺寸必须与实际内容量匹配。内容较少时不得为了“高级感”制造大面积空白；对象列表（Task / Asset / Result 等）应优先使用紧凑行高和稳定间距，让同屏可见项更多。媒体预览可以保留视觉面积，但参数、元数据和工具栏应保持紧凑。**
 - **Dialog / Overlay 的外框尺寸必须稳定。用户/AI、可视化/文本、上下文承接模式等内部标签切换只能替换或重排既定内容区，不得导致整个窗口忽大忽小。**
 - **可跨项目复用的基础控件必须优先进入 `Terry_React_UI_Library`，ShotMill 不得为 Button、Select、SegmentedControl、SlidingTabs、Checkbox、Switch、Slider、TextField、Tooltip 等再维护一套平行实现。只有 Task Card、H3 Prompt Editor、Result Preview、运行中心等业务专属组件留在 ShotMill。UI 库新增公开组件必须同步挂到 UI Showcase。**
+- **共享组件的内部 DOM / 几何 / padding / line-height / Track / Knob / Indicator 归 UI Library 所有；ShotMill 业务 CSS 不得通过 `.tc-*` 内部选择器、宽泛 descendant selector、`!important` 或负 margin/translate 二次修共享组件。组件异常先看 Showcase、实际依赖 SHA、Computed Style 和 CSS 所有权。**
+- **同一行中的文字、图标、按钮、Select、标签组默认必须真实垂直居中；不得依赖肉眼近似或后续像素补偿。**
 - **标签控件分为两类且语义固定：`SegmentedControl` 用于用户/AI、可视化/文本等高层模式或视图切换，组内等宽、两端完整半圆，选中项整块轻微提亮且文字/图标变 Accent，不使用底部亮条；`SlidingTabs` 用于分辨率、质量、生成模式、上下文承接等参数密集区域，无圆角外框，底部保留暗轨道，Accent 指示条滑动到当前项，当前文字/图标同步变 Accent。不得在参数密集区滥用胶囊标签。**
 - 默认一级结构只有 **项目首页** 与 **项目工作台**；任务编辑使用 Overlay。
 - 首页只负责打开 / 新建项目，不展示任务内部参数。
@@ -147,6 +150,7 @@ ShotMill 是面向 AI 视频生产流程的素材生成平台，不是剪辑器�
 ## 开发与验收
 
 - 当前开发必须先阅读 `V0.4_BATCH_PRODUCTION_PIPELINE.md`。
+- **任何 UI 修改必须阅读 `UI_DEVELOPMENT_RULES.md` 与 `UI_UX_SPEC.md`；不得通过新增 fix CSS、越界修改共享控件、额外滚动条或像素补偿绕过其中红线。**
 - V0.4 UI 修改必须阅读 `UI_V0.9_BATCH_REVIEW_WORKFLOW.md`，并继承 V0.8 / V0.6 / V0.5 UI 文档和 `UI_DIRECTOR_MODE_GUIDE.md` 未被覆盖的规则。
 - AI 提示词增强实现必须先阅读 `AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`。
 - 后端基础边界仍以 `V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS.md` 为已完成基线。
