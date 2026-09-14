@@ -49,18 +49,20 @@ describe("TaskEditorDialog", () => {
     expect(within(dialog).getByText("任务编号 T01-001")).toBeInTheDocument();
     const resolution = within(dialog).getByRole("group", { name: "分辨率" });
     expect(resolution).toBeInTheDocument();
+    expect(resolution).toHaveClass("tc-segmented");
     expect(within(resolution).getByRole("button", { name: "480P" })).toBeInTheDocument();
     expect(within(resolution).getByRole("button", { name: "720P" })).toBeInTheDocument();
     expect(within(resolution).getByRole("button", { name: "1080P" })).toBeInTheDocument();
     expect(within(resolution).queryByRole("button", { name: "2K" })).not.toBeInTheDocument();
-    expect(within(dialog).getByRole("group", { name: "质量档位" })).toBeInTheDocument();
-    expect(within(dialog).getByRole("group", { name: "生成模式" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("group", { name: "质量档位" })).toHaveClass("tc-segmented");
+    expect(within(dialog).getByRole("group", { name: "生成模式" })).toHaveClass("tc-segmented");
     expect(within(dialog).getByRole("slider", { name: "总秒数" })).toBeInTheDocument();
     expect(within(dialog).getByRole("slider", { name: "承接起点" })).toBeInTheDocument();
     expect(within(dialog).getByRole("slider", { name: "承接终点" })).toBeInTheDocument();
     expect(within(dialog).getByRole("tab", { name: "片段承接" })).toHaveAttribute("aria-selected", "true");
     expect(within(dialog).getByRole("tab", { name: "用户" })).toBeInTheDocument();
     expect(within(dialog).getByRole("tab", { name: /AI 增强/ })).toBeInTheDocument();
+    expect(dialog.querySelectorAll(".tc-segmented").length).toBeGreaterThanOrEqual(6);
     expect(dialog).not.toHaveTextContent("Generation Profile");
     expect(dialog).not.toHaveTextContent("Visual Beat");
     expect(dialog).not.toHaveTextContent("Validator");
@@ -176,10 +178,10 @@ describe("TaskEditorDialog", () => {
 
     renderEditor(onSave, vi.fn(), task, onEnhancePrompt);
 
-    expect(screen.queryByRole("combobox", { name: "AI提示词增强记录" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: /AI 增强/ }));
 
-    const history = screen.getByRole("combobox", { name: "AI提示词增强记录" });
+    let history = screen.getByRole("combobox");
     expect(history).toBeDisabled();
     expect(screen.getByText("AI增强的提示词显示在这里")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "保存" })).toBeDisabled();
@@ -191,16 +193,22 @@ describe("TaskEditorDialog", () => {
       previousTaskSummary: "上一任务中，角色穿过雨夜码头并抵达仓库外。",
       projectBackground: "雨夜旧港口项目背景",
     });
-    expect(screen.getByRole("combobox", { name: "AI提示词增强记录" })).not.toBeDisabled();
+    history = screen.getByRole("combobox");
+    expect(history).not.toBeDisabled();
+    expect(history).toHaveAttribute("data-value", "ai-v1");
     await waitFor(() => expect(screen.getByRole("textbox", { name: "AI 增强提示词可视化" })).toHaveTextContent("AI增强版本一"));
 
     await user.click(screen.getByRole("button", { name: "增强" }));
     await waitFor(() => expect(onEnhancePrompt).toHaveBeenCalledTimes(2));
-    expect(screen.getByRole("combobox", { name: "AI提示词增强记录" }).querySelectorAll("option")).toHaveLength(2);
-    await waitFor(() => expect(screen.getByRole("textbox", { name: "AI 增强提示词可视化" })).toHaveTextContent("AI增强版本二"));
-
-    await user.selectOptions(screen.getByRole("combobox", { name: "AI提示词增强记录" }), "ai-v1");
+    history = screen.getByRole("combobox");
+    expect(history).toHaveAttribute("data-value", "ai-v2");
+    await user.click(history);
+    const historyList = screen.getByRole("listbox");
+    const historyOptions = within(historyList).getAllByRole("option");
+    expect(historyOptions).toHaveLength(2);
+    await user.click(historyOptions[0]);
     await waitFor(() => expect(screen.getByRole("textbox", { name: "AI 增强提示词可视化" })).toHaveTextContent("AI增强版本一"));
+    expect(screen.getByRole("combobox")).toHaveAttribute("data-value", "ai-v1");
     await user.click(screen.getByRole("button", { name: "保存" }));
 
     expect(onSave.mock.calls[0][0]).toMatchObject({
@@ -276,7 +284,7 @@ describe("TaskEditorDialog", () => {
     expect(screen.getByRole("tab", { name: /AI 增强/ })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByText("已使用AI增强提示词")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /文本/ })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("combobox", { name: "AI提示词增强记录" })).toHaveValue(`legacy-${task.id}`);
+    expect(screen.getByRole("combobox")).toHaveAttribute("data-value", `legacy-${task.id}`);
   });
 
   it("cancels without saving", async () => {
