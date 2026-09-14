@@ -14,11 +14,15 @@ export function BatchActionBar({
   onEnhance,
   onGenerate,
   onClear,
+  enhanceDisabled = false,
+  generateDisabled = false,
 }: {
   selectedCount: number;
   onEnhance: () => void;
   onGenerate: () => void;
   onClear: () => void;
+  enhanceDisabled?: boolean;
+  generateDisabled?: boolean;
 }) {
   if (selectedCount < 1) return null;
 
@@ -26,8 +30,8 @@ export function BatchActionBar({
     <div className="batch-action-bar" role="region" aria-label="批量操作">
       <strong>已选择 {selectedCount} 项</strong>
       <div className="batch-action-bar-actions">
-        <Button onClick={onEnhance}><Sparkles size={14} /> AI 增强</Button>
-        <Button onClick={onGenerate}><Video size={14} /> 生成视频</Button>
+        <Button disabled={enhanceDisabled} onClick={onEnhance}><Sparkles size={14} /> AI 增强</Button>
+        <Button disabled={generateDisabled} onClick={onGenerate}><Video size={14} /> 生成视频</Button>
         <Button onClick={onClear}><X size={14} /> 取消选择</Button>
       </div>
     </div>
