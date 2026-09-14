@@ -1,0 +1,145 @@
+.batch-action-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 38px;
+  padding: 6px 8px 6px 14px;
+  border: 1px solid var(--sm-border-strong);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sm-surface-2) 94%, transparent);
+  box-shadow: var(--sm-shadow);
+  transform: translateX(-50%);
+  backdrop-filter: blur(14px);
+}
+
+.batch-action-bar > strong {
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sm-text);
+}
+
+.batch-action-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.batch-prompt-dialog {
+  display: grid;
+  gap: 18px;
+  width: min(430px, calc(100vw - 48px));
+}
+
+.batch-prompt-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 2px 0 12px;
+  border-bottom: 1px solid var(--sm-border);
+}
+
+.batch-prompt-summary strong {
+  font-size: 15px;
+}
+
+.batch-prompt-summary span,
+.batch-prompt-order span {
+  font-size: 12px;
+  color: var(--sm-text-muted);
+}
+
+.batch-prompt-options {
+  display: grid;
+  gap: 6px;
+}
+
+.batch-prompt-options > label,
+.batch-prompt-order {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.batch-prompt-options > label > span,
+.batch-prompt-order strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sm-text);
+}
+
+.batch-prompt-dialog > footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.project-task-area {
+  position: relative;
+}
+
+.task-list-row.is-batch-selected,
+.task-card-item.is-batch-selected {
+  outline: 1px solid color-mix(in srgb, var(--sm-accent) 70%, transparent);
+  outline-offset: -1px;
+  background: color-mix(in srgb, var(--sm-surface-2) 86%, var(--sm-accent) 14%);
+}
+
+.task-review-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 180px;
+  color: var(--sm-text-muted);
+}
+
+.task-review-navigation > span {
+  min-width: 54px;
+  text-align: center;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.task-review-navigation button {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--sm-text-muted);
+  cursor: pointer;
+}
+
+.task-review-navigation button:hover:not(:disabled) {
+  border-color: var(--sm-border);
+  background: var(--sm-surface-2);
+  color: var(--sm-text);
+}
+
+.task-review-navigation button:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
+@media (max-width: 900px) {
+  .batch-action-bar {
+    max-width: calc(100vw - 28px);
+  }
+
+  .batch-action-bar > strong {
+    display: none;
+  }
+}
