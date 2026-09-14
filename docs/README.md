@@ -10,6 +10,9 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
 - [V0.9 Batch Review Workflow UI 规范](./UI_V0.9_BATCH_REVIEW_WORKFLOW.md)  
   **当前 UI 增量规范。** 定义工作台批量 AI 增强、Task 状态、多选批量操作、运行中心、连续审核、上一个 / 下一个、确认并下一个，以及批量视频生成前的审核 Gate。
 
+- [ShotMill UI 开发规则](./UI_DEVELOPMENT_RULES.md)  
+  **所有 UI / CSS / Overlay / Dialog / UI Library 集成修改的强制实现红线。** 定义组件边界、CSS 所有权、弹性布局、滚动条原则、信息密度、标签语义、主题颜色、Portal、垂直居中、UI Library Showcase、调试顺序与提交前检查。该文档吸收 Rulesmd Editor 已验证的 UI 开发经验，目标是减少 ShotMill 后续重复打磨与 fix CSS 堆叠。
+
 ## 当前必须优先阅读
 
 - [AI 提示词增强专项架构](./AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md)  
@@ -53,7 +56,7 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
   产品边界、Provider 架构、Task / Job / Result、Context、Queue、Remote Monitor、整体技术方向。
 
 - [UI / UX 开发规范](./UI_UX_SPEC.md)  
-  通用视觉、Overlay、可访问性、开发模式与视觉回归基础协议。
+  通用视觉、Overlay、可访问性、开发模式与视觉回归基础协议。产品体验目标看此文档；实现红线看 `UI_DEVELOPMENT_RULES.md`。
 
 - [测试策略](./TEST_STRATEGY.md)  
   Unit / Integration / Contract / E2E / Hardware Smoke、Fake Provider、故障注入和回归策略。
@@ -83,7 +86,8 @@ ShotMill 的开发文档按职责拆分，避免单个文档无限膨胀。开�
   ├─ 项目配置
   ├─ 列表模式
   ├─ 卡片模式
-  ├─ 共用新建任务 / 批量操作工具栏
+  ├─ 主内容区新建任务卡 / 创建行
+  ├─ 批量操作 contextual bar
   ├─ 右侧只读信息 / Result 预览
   └─ 底部 Prompt / Video 运行摘要
        ↓ 双击 / 右键 / 新建任务
@@ -173,7 +177,11 @@ V0.5_BACKEND_FRONTEND_ADAPTER
 UI 实现优先遵守：
 
 ```text
-UI_V0.9_BATCH_REVIEW_WORKFLOW
+UI_DEVELOPMENT_RULES               # 实现红线 / CSS / 组件边界 / Overlay / 弹性布局
+   +
+UI_UX_SPEC                         # 通用体验与交互原则
+   ↓
+UI_V0.9_BATCH_REVIEW_WORKFLOW      # 当前版本具体批量 UI
    ↓
 UI_V0.8_AI_PROMPT_ENHANCEMENT
    ↓
@@ -192,19 +200,20 @@ UI_DIRECTOR_MODE_GUIDE
 
 1. 明确的新需求 / 最新决策；
 2. **`V0.4_BATCH_PRODUCTION_PIPELINE.md`：当前批量生产、Prompt Review、双 Queue 和 Batch Generation 执行顺序、Gate 与 Freeze 标准；**
-3. **`UI_V0.9_BATCH_REVIEW_WORKFLOW.md`：当前工作台批量增强、连续审核、批量生成与运行中心 UI；**
-4. **`AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`：AI 提示词增强输入、媒体、上下文、Skill、Provider 与 revision 长期架构；**
-5. `V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS.md`：已完成的后端基础边界与不可变 Job / Result 基线；
-6. `UI_V0.8_AI_PROMPT_ENHANCEMENT.md`：单任务 AI 增强 UI、历史、Prompt Source；
-7. `UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md`：项目工作台顶部、项目配置、H3 Prompt 与 Result；
-8. `UI_V0.5_PROJECT_WORKSPACE.md`：总体页面结构与交互；
-9. `UI_V0.5_TASK_EDITOR_REFINEMENT.md`：任务配置、Context、控件细化；
-10. `V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md` + `V0.6_BACKEND_DELTA.md` + `V0.5_BACKEND_FRONTEND_ADAPTER.md`：版本适配和前后端边界；
-11. `UI_DIRECTOR_MODE_GUIDE.md`：查看/编辑分离、防参数墙、用户术语等未冲突规则；
-12. `STORYBOARD_TASK_MODEL.md`：领域关系；
-13. `UI_UX_SPEC.md`：通用 UI 行为；
-14. `TEST_STRATEGY.md`：测试与验收；
-15. `ShotMill_产品与架构规划.md`：其他核心架构；
-16. V0.2 / V0.1：历史能力基线。
+3. **`UI_DEVELOPMENT_RULES.md`：所有 UI 实现、CSS 所有权、组件边界、Overlay、主题、弹性布局、信息密度与调试红线；**
+4. **`UI_V0.9_BATCH_REVIEW_WORKFLOW.md`：当前工作台批量增强、连续审核、批量生成与运行中心 UI；**
+5. **`AI_PROMPT_ENHANCEMENT_ARCHITECTURE.md`：AI 提示词增强输入、媒体、上下文、Skill、Provider 与 revision 长期架构；**
+6. `V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS.md`：已完成的后端基础边界与不可变 Job / Result 基线；
+7. `UI_V0.8_AI_PROMPT_ENHANCEMENT.md`：单任务 AI 增强 UI、历史、Prompt Source；
+8. `UI_V0.6_PROJECT_CONFIG_H3_EDITOR.md`：项目工作台顶部、项目配置、H3 Prompt 与 Result；
+9. `UI_V0.5_PROJECT_WORKSPACE.md`：总体页面结构与交互；
+10. `UI_V0.5_TASK_EDITOR_REFINEMENT.md`：任务配置、Context、控件细化；
+11. `V0.8_BACKEND_AI_PROMPT_ENHANCEMENT.md` + `V0.6_BACKEND_DELTA.md` + `V0.5_BACKEND_FRONTEND_ADAPTER.md`：版本适配和前后端边界；
+12. `UI_DIRECTOR_MODE_GUIDE.md`：查看/编辑分离、防参数墙、用户术语等未冲突规则；
+13. `STORYBOARD_TASK_MODEL.md`：领域关系；
+14. `UI_UX_SPEC.md`：通用 UI 行为与体验；
+15. `TEST_STRATEGY.md`：测试与验收；
+16. `ShotMill_产品与架构规划.md`：其他核心架构；
+17. V0.2 / V0.1：历史能力基线。
 
 根目录 `AGENTS.md` 保持为开发导航与不可违反规则汇总。
