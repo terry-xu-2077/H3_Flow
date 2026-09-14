@@ -310,16 +310,21 @@ export function ProjectWorkspace({
 
       <div className="project-workspace-body">
         <section className="project-task-area" aria-label="任务区域">
-          <header className="task-workspace-toolbar">
-            <Button variant="accent" onClick={openNewTask}><Plus size={15} /> 新建任务</Button>
-            <span>{tasks.length} 个任务</span>
-          </header>
-
           {viewMode === "list" ? (
             <div className="task-list-view">
-              {tasks.length === 0 ? (
-                <div className="task-list-empty"><p>当前项目还没有任务。</p></div>
-              ) : tasks.map((task, index) => {
+              <button
+                type="button"
+                className="task-list-row"
+                style={{ borderStyle: "dashed" }}
+                onClick={openNewTask}
+                aria-label="新建任务卡"
+              >
+                <div className="task-preview is-compact"><Plus size={24} /></div>
+                <div className="task-list-copy"><strong>新建任务卡</strong><span>点击创建新的生成任务</span></div>
+                <div className="task-list-stats"><span>当前 {tasks.length} 个任务</span><span>创建后进入任务编辑</span></div>
+                <div className="task-list-status"><Plus size={14} />新建</div>
+              </button>
+              {tasks.map((task, index) => {
                 const status = displayTaskStatus(task);
                 const versions = resultCount(project.snapshot, task.id);
                 return (
