@@ -1,6 +1,13 @@
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { PromptAssetEditor, type PromptAsset } from "./PromptAssetEditor";
+import { OverlayPortal, useOverlayRegistration, useOverlayZIndex } from "../ui/overlay";
+import {
+  findAssetMention,
+  insertAssetReference,
+  PromptAssetEditor,
+  type AssetMention,
+  type PromptAsset,
+} from "./PromptAssetEditor";
 
 export type H3PromptViewMode = "visual" | "text";
 
@@ -210,6 +217,127 @@ function serializeVisual(root: HTMLElement) {
   return Array.from(root.childNodes).map(visit).join("");
 }
 
+function serializedNodeLength(node: Node): number {
+  if (node.nodeType === Node.TEXT_NODE) return node.textContent?.length ?? 0;
+  if (!(node instanceof HTMLElement)) return 0;
+  if (node.tagName === "BR") return 1;
+  if (node.dataset.raw != null) return node.dataset.raw.length;
+  return Array.from(node.childNodes).reduce((sum, child) => sum + serializedNodeLength(child), 0);
+}
+
+function serializedCaretOffset(root: HTMLElement) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  const target = range.startContainer;
+  const targetOffset = range.startOffset;
+  if (target !== root && !root.contains(target)) return null;
+
+  let total = 0;
+  let found = false;
+  const walk = (node: Node) => {
+    if (found) return;
+    if (node === target) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        total += Math.min(targetOffset, node.textContent?.length ?? 0);
+      } else if (node instanceof HTMLElement) {
+        if (node.dataset.raw != null) {
+          if (targetOffset > 0) total += node.dataset.raw.length;
+        } else {
+          const count = Math.min(targetOffset, node.childNodes.length);
+          for (let index = 0; index < count; index += 1) total += serializedNodeLength(node.childNodes[index]);
+        }
+      }
+      found = true;
+      return;
+    }
+
+    if (node.nodeType === Node.TEXT_NODE) {
+      total += serializedNodeLength(node);
+      return;
+    }
+    if (node instanceof HTMLElement && (node.tagName === "BR" || node.dataset.raw != null)) {
+      total += serializedNodeLength(node);
+      return;
+    }
+    for (const child of Array.from(node.childNodes)) {
+      walk(child);
+      if (found) return;
+    }
+  };
+
+  walk(root);
+  return found ? total : null;
+}
+
+function placeSerializedCaret(root: HTMLElement, targetOffset: number) {
+  const selection = window.getSelection();
+  if (!selection) return;
+  const range = document.createRange();
+  let remaining = Math.max(0, targetOffset);
+  let placed = false;
+
+  const walk = (node: Node) => {
+    if (placed) return;
+    if (node.nodeType === Node.TEXT_NODE) {
+      const length = node.textContent?.length ?? 0;
+      if (remaining <= length) {
+        range.setStart(node, remaining);
+        placed = true;
+      } else {
+        remaining -= length;
+      }
+      return;
+    }
+
+    if (!(node instanceof HTMLElement)) return;
+    const isAtomic = node.tagName === "BR" || node.dataset.raw != null;
+    if (isAtomic) {
+      const length = serializedNodeLength(node);
+      if (remaining <= length) {
+        const parent = node.parentNode;
+        if (!parent) return;
+        const index = Array.prototype.indexOf.call(parent.childNodes, node) as number;
+        range.setStart(parent, index + (remaining > 0 ? 1 : 0));
+        placed = true;
+      } else {
+        remaining -= length;
+      }
+      return;
+    }
+
+    for (const child of Array.from(node.childNodes)) {
+      walk(child);
+      if (placed) return;
+    }
+  };
+
+  walk(root);
+  if (!placed) {
+    range.selectNodeContents(root);
+    range.collapse(false);
+  } else {
+    range.collapse(true);
+  }
+  selection.removeAllRanges();
+  selection.addRange(range);
+  root.focus({ preventScroll: true });
+}
+
+function caretViewportPoint(root: HTMLElement) {
+  const selection = window.getSelection();
+  if (selection?.rangeCount) {
+    const range = selection.getRangeAt(0).cloneRange();
+    range.collapse(true);
+    if (typeof range.getBoundingClientRect === "function") {
+      const rect = range.getBoundingClientRect();
+      if (rect.left || rect.top || rect.width || rect.height) return { left: rect.left, top: rect.bottom };
+    }
+  }
+  const rect = root.getBoundingClientRect();
+  return { left: rect.left + 14, top: rect.top + 44 };
+}
+
 function renderVisual(root: HTMLElement, value: string, assets: PromptAsset[], notifyChange: () => void) {
   root.replaceChildren();
   H3_TOKEN_PATTERN.lastIndex = 0;
@@ -226,23 +354,110 @@ function renderVisual(root: HTMLElement, value: string, assets: PromptAsset[], n
 
 export function H3PromptEditor({ value, onChange, assets, ariaLabel, viewMode }: H3PromptEditorProps) {
   const visualRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const pendingCaret = useRef<number | null>(null);
   const latestValue = useRef(value);
+  const [mention, setMention] = useState<AssetMention | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [menuPosition, setMenuPosition] = useState({ left: 8, top: 8 });
+  const menuId = useId();
+  const menuOpen = viewMode === "visual" && mention !== null;
+  const zIndex = useOverlayZIndex(30);
   latestValue.current = value;
 
-  const assetKey = useMemo(() => assets.map((asset) => `${asset.id}:${asset.previewUrl || ""}:${asset.name}`).join("|"), [assets]);
+  const assetKey = useMemo(() => assets.map((asset) => `${asset.id}:${asset.reference}:${asset.previewUrl || ""}:${asset.name}`).join("|"), [assets]);
+  const visibleAssets = useMemo(() => {
+    if (!mention?.query) return assets;
+    return assets.filter((asset) => `${asset.name} ${asset.reference} ${asset.detail} ${asset.kind}`
+      .toLocaleLowerCase()
+      .includes(mention.query));
+  }, [assets, mention]);
+
+  const closeMenu = () => {
+    setMention(null);
+    setActiveIndex(0);
+  };
+
+  useOverlayRegistration(menuOpen, closeMenu);
+
+  const updateMention = (root: HTMLElement, nextValue = serializeVisual(root)) => {
+    const caret = serializedCaretOffset(root);
+    const nextMention = caret == null ? null : findAssetMention(nextValue, caret);
+    setMention((current) => {
+      if (!nextMention || !current || current.query !== nextMention.query || current.start !== nextMention.start) setActiveIndex(0);
+      return nextMention;
+    });
+  };
 
   useLayoutEffect(() => {
     if (viewMode !== "visual") return;
     const root = visualRef.current;
     if (!root) return;
     const current = serializeVisual(root);
-    if (current === value && root.childNodes.length > 0) return;
-    renderVisual(root, value, assets, () => {
-      const next = serializeVisual(root);
-      latestValue.current = next;
-      onChange(next);
-    });
+    if (current !== value || root.childNodes.length === 0) {
+      renderVisual(root, value, assets, () => {
+        const next = serializeVisual(root);
+        latestValue.current = next;
+        onChange(next);
+      });
+    }
+    if (pendingCaret.current != null) {
+      const caret = pendingCaret.current;
+      pendingCaret.current = null;
+      placeSerializedCaret(root, caret);
+    }
   }, [assetKey, assets, onChange, value, viewMode]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (visualRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      closeMenu();
+    };
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => document.removeEventListener("pointerdown", handlePointerDown, true);
+  }, [menuOpen]);
+
+  useLayoutEffect(() => {
+    if (!menuOpen || !visualRef.current || !menuRef.current) return;
+    const root = visualRef.current;
+    const menu = menuRef.current;
+    const place = () => {
+      const point = caretViewportPoint(root);
+      const width = menu.offsetWidth || 330;
+      const height = Math.min(menu.offsetHeight || 300, window.innerHeight - 16);
+      const maxLeft = Math.max(8, window.innerWidth - width - 8);
+      const left = Math.min(Math.max(8, point.left), maxLeft);
+      const below = point.top + 7;
+      const top = below + height <= window.innerHeight - 8
+        ? below
+        : Math.max(8, point.top - height - 24);
+      setMenuPosition({ left: Math.round(left), top: Math.round(top) });
+    };
+    place();
+    root.addEventListener("scroll", place);
+    window.addEventListener("resize", place);
+    return () => {
+      root.removeEventListener("scroll", place);
+      window.removeEventListener("resize", place);
+    };
+  }, [mention?.end, mention?.query, menuOpen, visibleAssets.length]);
+
+  useEffect(() => {
+    setActiveIndex((current) => Math.min(current, Math.max(0, visibleAssets.length - 1)));
+  }, [visibleAssets.length]);
+
+  const chooseAsset = (asset: PromptAsset) => {
+    const root = visualRef.current;
+    if (!root || !mention) return;
+    const current = serializeVisual(root);
+    const result = insertAssetReference(current, mention, asset.reference);
+    pendingCaret.current = result.caret;
+    latestValue.current = result.value;
+    onChange(result.value);
+    closeMenu();
+  };
 
   if (viewMode === "text") {
     return <PromptAssetEditor value={value} onChange={onChange} assets={assets} ariaLabel={ariaLabel} rows={18} />;
@@ -258,19 +473,91 @@ export function H3PromptEditor({ value, onChange, assets, ariaLabel, viewMode }:
         role="textbox"
         aria-label={`${ariaLabel}可视化`}
         aria-multiline="true"
+        aria-autocomplete="list"
+        aria-controls={menuOpen ? menuId : undefined}
+        aria-expanded={menuOpen}
+        aria-haspopup="listbox"
+        aria-activedescendant={menuOpen && visibleAssets[activeIndex] ? `${menuId}-${visibleAssets[activeIndex].id}` : undefined}
         data-placeholder="在这里编写 H3 提示词。标签、镜头、对白和素材引用会以可视化组件显示。"
         onInput={(event) => {
           const next = serializeVisual(event.currentTarget);
           latestValue.current = next;
           onChange(next);
+          updateMention(event.currentTarget, next);
+        }}
+        onClick={(event) => updateMention(event.currentTarget)}
+        onKeyUp={(event) => {
+          if (["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(event.key) && menuOpen) return;
+          updateMention(event.currentTarget);
+        }}
+        onKeyDown={(event) => {
+          if (!menuOpen) return;
+          if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
+            closeMenu();
+            return;
+          }
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            if (!visibleAssets.length) return;
+            const delta = event.key === "ArrowDown" ? 1 : -1;
+            setActiveIndex((current) => (current + delta + visibleAssets.length) % visibleAssets.length);
+            return;
+          }
+          if ((event.key === "Enter" || event.key === "Tab") && visibleAssets[activeIndex]) {
+            event.preventDefault();
+            chooseAsset(visibleAssets[activeIndex]);
+          }
         }}
         onBlur={(event) => {
           const next = serializeVisual(event.currentTarget);
           if (next !== latestValue.current) onChange(next);
           renderVisual(event.currentTarget, next, assets, () => onChange(serializeVisual(event.currentTarget)));
+          closeMenu();
         }}
       />
       <div className="h3-visual-editor-hint">可视化模式会将 H3 标签、素材引用、镜头标记与对白格式化显示；切回“文本”可查看原始提示词。</div>
+      {menuOpen && (
+        <OverlayPortal>
+          <div
+            ref={menuRef}
+            id={menuId}
+            className="prompt-asset-menu sm-overlay-surface h3-visual-asset-menu"
+            style={{ position: "fixed", ...menuPosition, ...zIndex }}
+            role="listbox"
+            aria-label="引用任务资产"
+            data-testid="h3-visual-asset-menu"
+          >
+            <header><strong>引用参考</strong><span>{mention.query ? `“${mention.query}”` : `${assets.length} 项资产`}</span></header>
+            <div className="prompt-asset-options">
+              {visibleAssets.map((asset, index) => (
+                <button
+                  key={asset.id}
+                  id={`${menuId}-${asset.id}`}
+                  type="button"
+                  role="option"
+                  aria-selected={index === activeIndex}
+                  className={index === activeIndex ? "is-active" : ""}
+                  onPointerMove={() => setActiveIndex(index)}
+                  onPointerDown={(event) => event.preventDefault()}
+                  onClick={() => chooseAsset(asset)}
+                >
+                  <span className={`prompt-asset-menu-thumb tone-${asset.tone}`}>
+                    {asset.previewUrl && asset.kind !== "audio"
+                      ? <img src={asset.previewUrl} alt="" />
+                      : <span>{mediaGlyph(asset)}</span>}
+                  </span>
+                  <span className="prompt-asset-menu-copy"><strong>{asset.name}</strong><small>{asset.reference} · {asset.detail}</small></span>
+                  <kbd>↵</kbd>
+                </button>
+              ))}
+              {!visibleAssets.length && <p className="prompt-asset-empty">没有匹配的任务资产。</p>}
+            </div>
+            <footer><span>↑↓ 选择</span><span>Enter / Tab 插入</span><span>Esc 关闭</span></footer>
+          </div>
+        </OverlayPortal>
+      )}
     </div>
   );
 }
