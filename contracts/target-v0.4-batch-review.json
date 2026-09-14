@@ -30,6 +30,19 @@
       "mockImplemented": true,
       "productionImplemented": false
     },
+    "GET /api/v1/projects/{projectId}/prompt-review-state": {
+      "response": {
+        "items": [
+          {
+            "taskId": "string",
+            "promptReviewStatus": "pending|approved",
+            "approvedRevision": "number?"
+          }
+        ]
+      },
+      "mockImplemented": true,
+      "productionImplemented": false
+    },
     "POST /api/v1/projects/{projectId}/tasks/{taskId}/prompt-review": {
       "request": {
         "action": "approve"
@@ -39,7 +52,23 @@
         "promptReviewStatus": "approved",
         "approvedRevision": "number"
       },
-      "mockImplemented": false,
+      "mockImplemented": true,
+      "productionImplemented": false
+    },
+    "POST /api/v1/projects/{projectId}/video-generation-batches/eligibility": {
+      "request": {
+        "taskIds": ["string"]
+      },
+      "response": {
+        "eligibleTaskIds": ["string"],
+        "skipped": [
+          {
+            "taskId": "string",
+            "reason": "not-reviewed|busy|invalid-params"
+          }
+        ]
+      },
+      "mockImplemented": true,
       "productionImplemented": false
     },
     "POST /api/v1/projects/{projectId}/video-generation-batches": {
@@ -56,7 +85,7 @@
           }
         ]
       },
-      "mockImplemented": false,
+      "mockImplemented": true,
       "productionImplemented": false
     }
   },
