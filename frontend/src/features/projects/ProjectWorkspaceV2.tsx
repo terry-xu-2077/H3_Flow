@@ -26,7 +26,7 @@ import type {
 import { ContextMenu, Dialog } from "../../ui/overlay";
 import { TaskEditorDialog } from "../storyboard/TaskEditorDialog";
 import { updateTaskComposerFields } from "../storyboard/storyboardMutations";
-import { BatchActionBar, BatchPromptDialog } from "./BatchReviewControls";
+import { BatchActionBar, BatchPromptDialog, type PromptBatchOptions } from "./BatchReviewControls";
 import { ProjectConfigPanel } from "./ProjectConfigPanel";
 
 export { CreateProjectDialog, ProjectHome } from "./ProjectWorkspace";
@@ -37,6 +37,11 @@ type TaskEditorPatch = Partial<Pick<GenerationTask,
   "title" | "aiPrompt" | "finalPrompt" | "generationParams" | "plannedDurationSeconds" | "assetBindings"
 >>;
 type ProjectSettingsPatch = Pick<DirectorProject, "title" | "description" | "useDescriptionForAiPrompt">;
+type BatchPromptSubmit = (request: {
+  taskIds: string[];
+  includeProjectBackground: boolean;
+  includePreviousTaskSummary: boolean;
+}) => Promise<unknown>;
 
 const taskStatusLabel: Record<DisplayStatus, string> = {
   idle: "未开始",
@@ -185,6 +190,7 @@ export function ProjectWorkspace({
   onUpdateTask,
   onSaveProjectConfiguration,
   onEnhancePrompt,
+  onBatchEnhancePrompts,
 }: {
   project: DirectorProject;
   onBack: () => void;
@@ -197,12 +203,14 @@ export function ProjectWorkspace({
     assets: DirectorProject["snapshot"]["assets"],
   ) => Promise<void>;
   onEnhancePrompt: (request: PromptEnhancementRequest) => Promise<PromptEnhancementResponse>;
+  onBatchEnhancePrompts: BatchPromptSubmit;
 }) {
   const [viewMode, setViewMode] = useState<TaskViewMode>("list");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [batchSelectedTaskIds, setBatchSelectedTaskIds] = useState<Set<string>>(() => new Set());
   const [batchAnchorIndex, setBatchAnchorIndex] = useState<number | null>(null);
   const [batchPromptOpen, setBatchPromptOpen] = useState(false);
+  const [batchPromptBusy, setBatchPromptBusy] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [loadedEditingTask, setLoadedEditingTask] = useState<GenerationTask | null>(null);
   const [draftTask, setDraftTask] = useState<GenerationTask | null>(null);
@@ -296,6 +304,25 @@ export function ProjectWorkspace({
   const clearBatchSelection = () => {
     setBatchSelectedTaskIds(new Set());
     setBatchAnchorIndex(null);
+  };
+
+  const submitBatchPromptEnhancement = async (options: PromptBatchOptions) => {
+    const orderedIds = tasks.filter((task) => batchSelectedTaskIds.has(task.id)).map((task) => task.id);
+    if (!orderedIds.length || batchPromptBusy) return;
+    setBatchPromptBusy(true);
+    try {
+      await onBatchEnhancePrompts({
+        taskIds: orderedIds,
+        includeProjectBackground: options.includeProjectBackground,
+        includePreviousTaskSummary: options.includePreviousTaskSummary,
+      });
+      setBatchPromptOpen(false);
+      await openExistingEditor(orderedIds[0]);
+    } catch (error) {
+      console.error("Failed to batch enhance prompts", error);
+    } finally {
+      setBatchPromptBusy(false);
+    }
   };
 
   const saveTask = (patch: TaskEditorPatch) => {
@@ -462,6 +489,7 @@ export function ProjectWorkspace({
         taskCount={batchSelectedTaskIds.size}
         projectBackgroundAvailable={project.useDescriptionForAiPrompt && Boolean(project.description.trim())}
         onClose={() => setBatchPromptOpen(false)}
+        onConfirm={(options) => void submitBatchPromptEnhancement(options)}
       />
 
       <ProjectConfigPanel
