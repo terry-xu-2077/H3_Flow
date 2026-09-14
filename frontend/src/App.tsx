@@ -52,12 +52,11 @@ export function App({ gateway = httpProjectGateway }: AppProps) {
       const state = await batchReviewGateway.getPromptReviewState(projectId);
       setPromptReviewItems(state.items);
       return state.items;
-    } catch (error) {
-      if ((error as { status?: number }).status === 404) {
-        setPromptReviewItems([]);
-        return [];
-      }
-      throw error;
+    } catch {
+      // V0.4 target contract may lead the production backend or an injected in-memory gateway.
+      // In that transition state the legacy workspace remains usable and simply shows pending review.
+      setPromptReviewItems([]);
+      return [];
     }
   }, []);
 
