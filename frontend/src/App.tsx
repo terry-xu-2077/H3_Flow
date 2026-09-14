@@ -171,6 +171,11 @@ export function App({ gateway = httpProjectGateway }: AppProps) {
       }}
       onSaveProjectConfiguration={saveProjectConfiguration}
       onEnhancePrompt={(request) => gateway.enhancePrompt(currentProject.id, request)}
+      onBatchEnhancePrompts={async (request) => {
+        const response = await gateway.batchEnhancePrompts(currentProject.id, request);
+        await reloadCurrentProject();
+        return response;
+      }}
     />
   );
 }
