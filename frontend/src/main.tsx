@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
 import { OverlayProvider } from "./ui/overlay";
+import "terry-react-ui-library/style.css";
 import "./styles/tokens.css";
 import "./styles/app.css";
 import "./styles/storyboard.css";
@@ -18,6 +19,7 @@ import "./styles/v0.6-project-config-polish.css";
 import "./styles/v0.6-project-config-height-fix.css";
 import "./styles/v0.7-controls-polish.css";
 import "./styles/v0.8-ai-enhance.css";
+import "./styles/v0.9-workspace-polish.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
