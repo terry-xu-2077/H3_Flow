@@ -8,6 +8,10 @@ import {
   type ProjectSummary,
 } from "./gateways/projectGateway";
 import {
+  batchReviewGateway,
+  type PromptReviewItem,
+} from "./gateways/batchReviewGateway";
+import {
   mapTaskEditor,
   mapWorkspaceProject,
   taskSaveInput,
@@ -26,6 +30,7 @@ type AppProps = {
 export function App({ gateway = httpProjectGateway }: AppProps) {
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [currentProject, setCurrentProject] = useState<DirectorProject | null>(null);
+  const [promptReviewItems, setPromptReviewItems] = useState<PromptReviewItem[]>([]);
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -42,16 +47,31 @@ export function App({ gateway = httpProjectGateway }: AppProps) {
     }
   }, [gateway]);
 
+  const loadPromptReviewState = useCallback(async (projectId: string) => {
+    try {
+      const state = await batchReviewGateway.getPromptReviewState(projectId);
+      setPromptReviewItems(state.items);
+      return state.items;
+    } catch (error) {
+      if ((error as { status?: number }).status === 404) {
+        setPromptReviewItems([]);
+        return [];
+      }
+      throw error;
+    }
+  }, []);
+
   const loadProject = useCallback(async (projectId: string) => {
     const [settings, workspace, assets] = await Promise.all([
       gateway.getProjectSettings(projectId),
       gateway.getWorkspace(projectId),
       gateway.listAssets(projectId),
+      loadPromptReviewState(projectId),
     ]);
     const project = mapWorkspaceProject(settings, workspace, assets);
     setCurrentProject(project);
     return project;
-  }, [gateway]);
+  }, [gateway, loadPromptReviewState]);
 
   useEffect(() => {
     void refreshProjects();
@@ -142,8 +162,10 @@ export function App({ gateway = httpProjectGateway }: AppProps) {
   return (
     <ProjectWorkspace
       project={currentProject}
+      promptReviewItems={promptReviewItems}
       onBack={() => {
         setCurrentProject(null);
+        setPromptReviewItems([]);
         void refreshProjects();
       }}
       onRenameProject={async (title) => {
@@ -172,9 +194,22 @@ export function App({ gateway = httpProjectGateway }: AppProps) {
       onSaveProjectConfiguration={saveProjectConfiguration}
       onEnhancePrompt={(request) => gateway.enhancePrompt(currentProject.id, request)}
       onBatchEnhancePrompts={async (request) => {
-        const response = await gateway.batchEnhancePrompts(currentProject.id, request);
+        const response = await batchReviewGateway.batchEnhancePrompts(currentProject.id, request);
         await reloadCurrentProject();
         return response;
+      }}
+      onApprovePrompt={async (taskId) => {
+        const result = await batchReviewGateway.approvePrompt(currentProject.id, taskId);
+        await loadPromptReviewState(currentProject.id);
+        return result;
+      }}
+      onCheckVideoBatchEligibility={(taskIds) => (
+        batchReviewGateway.checkVideoBatchEligibility(currentProject.id, taskIds)
+      )}
+      onCreateVideoBatch={async (taskIds) => {
+        const result = await batchReviewGateway.createVideoBatch(currentProject.id, taskIds);
+        await reloadCurrentProject();
+        return result;
       }}
     />
   );
