@@ -186,35 +186,7 @@
   font-size: 13px;
 }
 
-.simple-prompt-tabs {
-  display: flex;
-  align-items: stretch;
-}
-
-.simple-prompt-tabs button {
-  min-width: 90px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 0 13px;
-  border: 0;
-  border-left: 1px solid var(--sm-border);
-  color: var(--sm-text-muted);
-  background: transparent;
-  cursor: pointer;
-  font-size: 10px;
-}
-
-.simple-prompt-tabs button:hover,
-.simple-prompt-tabs button.is-active {
-  color: var(--sm-text);
-  background: var(--sm-surface-2);
-}
-
-.simple-prompt-tabs button.is-active {
-  box-shadow: inset 0 -2px var(--sm-accent);
-}
+/* Prompt source / view segmented controls are owned by Terry React UI Library. */
 
 .simple-prompt-body {
   min-height: 0;
