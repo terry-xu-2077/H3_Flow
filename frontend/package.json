@@ -18,7 +18,7 @@
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "terry-react-ui-library": "github:terry-xu-2077/Terry_React_UI_Library#1a01b82d229bd8099881547f9e3502bc879a602a"
+    "terry-react-ui-library": "github:terry-xu-2077/Terry_React_UI_Library#a382d3c449d3d4c718eb666fc2227e6085d74f81"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
