@@ -1,0 +1,2684 @@
+{
+  "components": {
+    "schemas": {
+      "AiPromptRevisionView": {
+        "properties": {
+          "assetIds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Assetids",
+            "type": "array"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "includePreviousTaskSummary": {
+            "title": "Includeprevioustasksummary",
+            "type": "boolean"
+          },
+          "includeProjectBackground": {
+            "title": "Includeprojectbackground",
+            "type": "boolean"
+          },
+          "modelId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modelid"
+          },
+          "previousTaskSummarySnapshot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previoustasksummarysnapshot"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "providerId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providerid"
+          },
+          "skillVersion": {
+            "title": "Skillversion",
+            "type": "string"
+          },
+          "sourceUserPrompt": {
+            "title": "Sourceuserprompt",
+            "type": "string"
+          },
+          "targetSkill": {
+            "title": "Targetskill",
+            "type": "string"
+          },
+          "taskId": {
+            "title": "Taskid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "taskId",
+          "createdAt",
+          "prompt",
+          "sourceUserPrompt",
+          "assetIds",
+          "includeProjectBackground",
+          "includePreviousTaskSummary",
+          "previousTaskSummarySnapshot",
+          "targetSkill",
+          "skillVersion",
+          "providerId",
+          "modelId"
+        ],
+        "title": "AiPromptRevisionView",
+        "type": "object"
+      },
+      "AssetListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProjectAssetView"
+                },
+                {
+                  "$ref": "#/components/schemas/AssetReferenceItem"
+                }
+              ]
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "AssetListResponse",
+        "type": "object"
+      },
+      "AssetPatchRequest": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          }
+        },
+        "title": "AssetPatchRequest",
+        "type": "object"
+      },
+      "AssetReferenceItem": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mediaType": {
+            "enum": [
+              "image",
+              "video",
+              "audio",
+              "other"
+            ],
+            "title": "Mediatype",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "previewUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previewurl"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "mediaType",
+          "category",
+          "previewUrl"
+        ],
+        "title": "AssetReferenceItem",
+        "type": "object"
+      },
+      "Body_import_asset_api_v1_projects__project_id__assets_post": {
+        "properties": {
+          "category": {
+            "default": "reference",
+            "title": "Category",
+            "type": "string"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_asset_api_v1_projects__project_id__assets_post",
+        "type": "object"
+      },
+      "EditorPreference": {
+        "properties": {
+          "aiViewMode": {
+            "default": "visual",
+            "enum": [
+              "visual",
+              "text"
+            ],
+            "title": "Aiviewmode",
+            "type": "string"
+          },
+          "userViewMode": {
+            "default": "visual",
+            "enum": [
+              "visual",
+              "text"
+            ],
+            "title": "Userviewmode",
+            "type": "string"
+          }
+        },
+        "title": "EditorPreference",
+        "type": "object"
+      },
+      "GenerationSettings": {
+        "properties": {
+          "contextDurationSeconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contextdurationseconds"
+          },
+          "contextEndSeconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contextendseconds"
+          },
+          "contextMode": {
+            "default": "不承接",
+            "title": "Contextmode",
+            "type": "string"
+          },
+          "contextStartSeconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contextstartseconds"
+          },
+          "mode": {
+            "default": "全能参考",
+            "title": "Mode",
+            "type": "string"
+          },
+          "quality": {
+            "default": "标准",
+            "title": "Quality",
+            "type": "string"
+          },
+          "resolution": {
+            "default": "1080p",
+            "title": "Resolution",
+            "type": "string"
+          }
+        },
+        "title": "GenerationSettings",
+        "type": "object"
+      },
+      "GenerationSubmitRequest": {
+        "properties": {
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          }
+        },
+        "title": "GenerationSubmitRequest",
+        "type": "object"
+      },
+      "GenerationSummary": {
+        "properties": {
+          "quality": {
+            "title": "Quality",
+            "type": "string"
+          },
+          "resolution": {
+            "title": "Resolution",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resolution",
+          "quality"
+        ],
+        "title": "GenerationSummary",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "JobView": {
+        "properties": {
+          "completedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completedat"
+          },
+          "errorCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errorcode"
+          },
+          "errorMessage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errormessage"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "providerJobId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providerjobid"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startedat"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "submittedAt": {
+            "format": "date-time",
+            "title": "Submittedat",
+            "type": "string"
+          },
+          "taskId": {
+            "title": "Taskid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "taskId",
+          "status",
+          "providerJobId",
+          "submittedAt",
+          "startedAt",
+          "completedAt",
+          "errorCode",
+          "errorMessage"
+        ],
+        "title": "JobView",
+        "type": "object"
+      },
+      "PrimaryResultRequest": {
+        "properties": {
+          "resultId": {
+            "title": "Resultid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resultId"
+        ],
+        "title": "PrimaryResultRequest",
+        "type": "object"
+      },
+      "PrimaryResultView": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "previewUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previewurl"
+          },
+          "videoUrl": {
+            "title": "Videourl",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "previewUrl",
+          "videoUrl"
+        ],
+        "title": "PrimaryResultView",
+        "type": "object"
+      },
+      "ProjectAssetView": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mediaType": {
+            "title": "Mediatype",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "originalFileName": {
+            "title": "Originalfilename",
+            "type": "string"
+          },
+          "projectRelativePath": {
+            "title": "Projectrelativepath",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "thumbnailUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnailurl"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "originalFileName",
+          "projectRelativePath",
+          "mediaType",
+          "category",
+          "tags"
+        ],
+        "title": "ProjectAssetView",
+        "type": "object"
+      },
+      "ProjectCreateRequest": {
+        "properties": {
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "useDescriptionForAiPrompt": {
+            "default": false,
+            "title": "Usedescriptionforaiprompt",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "ProjectCreateRequest",
+        "type": "object"
+      },
+      "ProjectListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectSummary"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ProjectListResponse",
+        "type": "object"
+      },
+      "ProjectPatchRequest": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "useDescriptionForAiPrompt": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usedescriptionforaiprompt"
+          }
+        },
+        "title": "ProjectPatchRequest",
+        "type": "object"
+      },
+      "ProjectRuntimeSummary": {
+        "properties": {
+          "activeTaskId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activetaskid"
+          },
+          "activeTaskTitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activetasktitle"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress"
+          },
+          "state": {
+            "default": "idle",
+            "enum": [
+              "idle",
+              "queued",
+              "running",
+              "failed"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "title": "ProjectRuntimeSummary",
+        "type": "object"
+      },
+      "ProjectSettingsView": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "useDescriptionForAiPrompt": {
+            "title": "Usedescriptionforaiprompt",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "useDescriptionForAiPrompt"
+        ],
+        "title": "ProjectSettingsView",
+        "type": "object"
+      },
+      "ProjectSummary": {
+        "properties": {
+          "assetCount": {
+            "title": "Assetcount",
+            "type": "integer"
+          },
+          "coverUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverurl"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "idle",
+              "running",
+              "completed",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "taskCount": {
+            "title": "Taskcount",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "taskCount",
+          "assetCount",
+          "updatedAt"
+        ],
+        "title": "ProjectSummary",
+        "type": "object"
+      },
+      "ProjectWorkspaceView": {
+        "properties": {
+          "project": {
+            "$ref": "#/components/schemas/WorkspaceProject"
+          },
+          "runtime": {
+            "$ref": "#/components/schemas/ProjectRuntimeSummary"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskSummary"
+            },
+            "title": "Tasks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "project",
+          "tasks",
+          "runtime"
+        ],
+        "title": "ProjectWorkspaceView",
+        "type": "object"
+      },
+      "PromptEnhancementContextRequest": {
+        "properties": {
+          "includePreviousTaskSummary": {
+            "default": false,
+            "title": "Includeprevioustasksummary",
+            "type": "boolean"
+          },
+          "includeProjectBackground": {
+            "default": false,
+            "title": "Includeprojectbackground",
+            "type": "boolean"
+          }
+        },
+        "title": "PromptEnhancementContextRequest",
+        "type": "object"
+      },
+      "PromptEnhancementGenerationRequest": {
+        "properties": {
+          "contextMode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contextmode"
+          },
+          "durationSeconds": {
+            "exclusiveMinimum": 0.0,
+            "title": "Durationseconds",
+            "type": "number"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "durationSeconds",
+          "mode"
+        ],
+        "title": "PromptEnhancementGenerationRequest",
+        "type": "object"
+      },
+      "PromptEnhancementMediaRequest": {
+        "properties": {
+          "assetId": {
+            "title": "Assetid",
+            "type": "string"
+          },
+          "reference": {
+            "title": "Reference",
+            "type": "string"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          }
+        },
+        "required": [
+          "assetId",
+          "reference"
+        ],
+        "title": "PromptEnhancementMediaRequest",
+        "type": "object"
+      },
+      "PromptEnhancementPreviewRequest": {
+        "properties": {
+          "context": {
+            "$ref": "#/components/schemas/PromptEnhancementContextRequest",
+            "default": {
+              "includePreviousTaskSummary": false,
+              "includeProjectBackground": false
+            }
+          },
+          "generation": {
+            "$ref": "#/components/schemas/PromptEnhancementGenerationRequest"
+          },
+          "media": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PromptEnhancementMediaRequest"
+            },
+            "title": "Media",
+            "type": "array"
+          },
+          "previousTaskId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previoustaskid"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "userPrompt": {
+            "title": "Userprompt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "userPrompt",
+          "generation"
+        ],
+        "title": "PromptEnhancementPreviewRequest",
+        "type": "object"
+      },
+      "PromptEnhancementPreviewView": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "modelId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modelid"
+          },
+          "previewId": {
+            "title": "Previewid",
+            "type": "string"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "providerId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providerid"
+          },
+          "skillVersion": {
+            "title": "Skillversion",
+            "type": "string"
+          },
+          "targetSkill": {
+            "title": "Targetskill",
+            "type": "string"
+          }
+        },
+        "required": [
+          "previewId",
+          "createdAt",
+          "prompt",
+          "targetSkill",
+          "skillVersion",
+          "providerId",
+          "modelId"
+        ],
+        "title": "PromptEnhancementPreviewView",
+        "type": "object"
+      },
+      "PromptEnhancementRequest": {
+        "properties": {
+          "context": {
+            "$ref": "#/components/schemas/PromptEnhancementContextRequest",
+            "default": {
+              "includePreviousTaskSummary": false,
+              "includeProjectBackground": false
+            }
+          },
+          "generation": {
+            "$ref": "#/components/schemas/PromptEnhancementGenerationRequest"
+          },
+          "media": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PromptEnhancementMediaRequest"
+            },
+            "title": "Media",
+            "type": "array"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "userPrompt": {
+            "title": "Userprompt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "userPrompt",
+          "generation"
+        ],
+        "title": "PromptEnhancementRequest",
+        "type": "object"
+      },
+      "PromptRevisionListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AiPromptRevisionView"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "PromptRevisionListResponse",
+        "type": "object"
+      },
+      "ResultListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ResultView"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ResultListResponse",
+        "type": "object"
+      },
+      "ResultView": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "jobId": {
+            "title": "Jobid",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "previewUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previewurl"
+          },
+          "reviewState": {
+            "title": "Reviewstate",
+            "type": "string"
+          },
+          "videoUrl": {
+            "title": "Videourl",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "jobId",
+          "videoUrl",
+          "previewUrl",
+          "metadata",
+          "reviewState",
+          "createdAt"
+        ],
+        "title": "ResultView",
+        "type": "object"
+      },
+      "TaskAssetRef": {
+        "properties": {
+          "assetId": {
+            "title": "Assetid",
+            "type": "string"
+          },
+          "reference": {
+            "title": "Reference",
+            "type": "string"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          }
+        },
+        "required": [
+          "assetId",
+          "reference"
+        ],
+        "title": "TaskAssetRef",
+        "type": "object"
+      },
+      "TaskEditorView": {
+        "properties": {
+          "aiEnhancedPrompt": {
+            "title": "Aienhancedprompt",
+            "type": "string"
+          },
+          "assetBindings": {
+            "items": {
+              "$ref": "#/components/schemas/TaskAssetRef"
+            },
+            "title": "Assetbindings",
+            "type": "array"
+          },
+          "displayNumber": {
+            "title": "Displaynumber",
+            "type": "integer"
+          },
+          "durationSeconds": {
+            "title": "Durationseconds",
+            "type": "number"
+          },
+          "editorPreference": {
+            "$ref": "#/components/schemas/EditorPreference"
+          },
+          "finalPrompt": {
+            "title": "Finalprompt",
+            "type": "string"
+          },
+          "generation": {
+            "$ref": "#/components/schemas/GenerationSettings"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "previousTaskDurationSeconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previoustaskdurationseconds"
+          },
+          "promptSource": {
+            "enum": [
+              "user",
+              "ai"
+            ],
+            "title": "Promptsource",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "scriptSource": {
+            "title": "Scriptsource",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "userIntent": {
+            "title": "Userintent",
+            "type": "string"
+          },
+          "userPrompt": {
+            "title": "Userprompt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "displayNumber",
+          "title",
+          "summary",
+          "scriptSource",
+          "userIntent",
+          "promptSource",
+          "userPrompt",
+          "aiEnhancedPrompt",
+          "finalPrompt",
+          "editorPreference",
+          "durationSeconds",
+          "previousTaskDurationSeconds",
+          "generation",
+          "assetBindings",
+          "revision"
+        ],
+        "title": "TaskEditorView",
+        "type": "object"
+      },
+      "TaskReorderRequest": {
+        "properties": {
+          "taskIds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Taskids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "taskIds"
+        ],
+        "title": "TaskReorderRequest",
+        "type": "object"
+      },
+      "TaskSaveRequest": {
+        "properties": {
+          "aiEnhancedPrompt": {
+            "default": "",
+            "title": "Aienhancedprompt",
+            "type": "string"
+          },
+          "assetBindings": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TaskAssetRef"
+            },
+            "title": "Assetbindings",
+            "type": "array"
+          },
+          "durationSeconds": {
+            "default": 6.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Durationseconds",
+            "type": "number"
+          },
+          "editorPreference": {
+            "$ref": "#/components/schemas/EditorPreference",
+            "default": {
+              "aiViewMode": "visual",
+              "userViewMode": "visual"
+            }
+          },
+          "generation": {
+            "$ref": "#/components/schemas/GenerationSettings",
+            "default": {
+              "contextMode": "不承接",
+              "mode": "全能参考",
+              "quality": "标准",
+              "resolution": "1080p"
+            }
+          },
+          "promptSource": {
+            "default": "user",
+            "enum": [
+              "user",
+              "ai"
+            ],
+            "title": "Promptsource",
+            "type": "string"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "scriptSource": {
+            "default": "",
+            "title": "Scriptsource",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "title": "Summary",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "userIntent": {
+            "default": "",
+            "title": "Userintent",
+            "type": "string"
+          },
+          "userPrompt": {
+            "default": "",
+            "title": "Userprompt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "TaskSaveRequest",
+        "type": "object"
+      },
+      "TaskSummary": {
+        "properties": {
+          "assetCount": {
+            "title": "Assetcount",
+            "type": "integer"
+          },
+          "displayNumber": {
+            "title": "Displaynumber",
+            "type": "integer"
+          },
+          "durationSeconds": {
+            "title": "Durationseconds",
+            "type": "number"
+          },
+          "generationSummary": {
+            "$ref": "#/components/schemas/GenerationSummary"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "previewUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previewurl"
+          },
+          "primaryResult": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrimaryResultView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress"
+          },
+          "promptExcerpt": {
+            "title": "Promptexcerpt",
+            "type": "string"
+          },
+          "resultCount": {
+            "title": "Resultcount",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "idle",
+              "running",
+              "completed",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "displayNumber",
+          "title",
+          "promptExcerpt",
+          "previewUrl",
+          "status",
+          "progress",
+          "assetCount",
+          "resultCount",
+          "durationSeconds",
+          "generationSummary"
+        ],
+        "title": "TaskSummary",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "WorkspaceProject": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "WorkspaceProject",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "ShotMill",
+    "version": "0.3"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Root  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Root",
+        "tags": [
+          "system"
+        ]
+      }
+    },
+    "/api/v1/jobs/{job_id}": {
+      "get": {
+        "operationId": "get_job_api_v1_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Job",
+        "tags": [
+          "generation"
+        ]
+      }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "operationId": "list_projects_api_v1_projects_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Projects",
+        "tags": [
+          "projects"
+        ]
+      },
+      "post": {
+        "operationId": "create_project_api_v1_projects_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Project",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}": {
+      "patch": {
+        "operationId": "update_project_api_v1_projects__project_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Project",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/assets": {
+      "get": {
+        "operationId": "list_assets_api_v1_projects__project_id__assets_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "purpose",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Purpose"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Assets",
+        "tags": [
+          "assets"
+        ]
+      },
+      "post": {
+        "operationId": "import_asset_api_v1_projects__project_id__assets_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_asset_api_v1_projects__project_id__assets_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectAssetView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Asset",
+        "tags": [
+          "assets"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/assets/{asset_id}": {
+      "delete": {
+        "operationId": "delete_asset_api_v1_projects__project_id__assets__asset_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Asset",
+        "tags": [
+          "assets"
+        ]
+      },
+      "patch": {
+        "operationId": "update_asset_api_v1_projects__project_id__assets__asset_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectAssetView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Asset",
+        "tags": [
+          "assets"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/events": {
+      "get": {
+        "operationId": "project_events_api_v1_projects__project_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Project Events",
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/prompt-enhancement-previews": {
+      "post": {
+        "operationId": "preview_prompt_enhancement_api_v1_projects__project_id__prompt_enhancement_previews_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptEnhancementPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptEnhancementPreviewView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Prompt Enhancement",
+        "tags": [
+          "prompt-enhancement"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/settings": {
+      "get": {
+        "operationId": "get_project_settings_api_v1_projects__project_id__settings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectSettingsView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Project Settings",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/tasks": {
+      "post": {
+        "operationId": "create_task_api_v1_projects__project_id__tasks_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskSaveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Task",
+        "tags": [
+          "tasks"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/tasks/reorder": {
+      "post": {
+        "operationId": "reorder_tasks_api_v1_projects__project_id__tasks_reorder_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskReorderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reorder Tasks",
+        "tags": [
+          "tasks"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/tasks/{task_id}": {
+      "patch": {
+        "operationId": "update_task_api_v1_projects__project_id__tasks__task_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskSaveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Task",
+        "tags": [
+          "tasks"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/tasks/{task_id}/editor": {
+      "get": {
+        "operationId": "get_task_editor_api_v1_projects__project_id__tasks__task_id__editor_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskEditorView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Task Editor",
+        "tags": [
+          "tasks"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/tasks/{task_id}/generation": {
+      "post": {
+        "operationId": "submit_generation_api_v1_projects__project_id__tasks__task_id__generation_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerationSubmitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit Generation",
+        "tags": [
+          "generation"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/tasks/{task_id}/primary-result": {
+      "patch": {
+        "operationId": "select_primary_result_api_v1_projects__project_id__tasks__task_id__primary_result_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrimaryResultRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Select Primary Result",
+        "tags": [
+          "results"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/tasks/{task_id}/prompt-enhancements": {
+      "post": {
+        "operationId": "enhance_prompt_api_v1_projects__project_id__tasks__task_id__prompt_enhancements_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptEnhancementRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPromptRevisionView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Enhance Prompt",
+        "tags": [
+          "prompt-enhancement"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/tasks/{task_id}/prompt-revisions": {
+      "get": {
+        "operationId": "list_prompt_revisions_api_v1_projects__project_id__tasks__task_id__prompt_revisions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptRevisionListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Prompt Revisions",
+        "tags": [
+          "prompt-enhancement"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/tasks/{task_id}/prompt-revisions/{revision_id}/select": {
+      "post": {
+        "operationId": "select_prompt_revision_api_v1_projects__project_id__tasks__task_id__prompt_revisions__revision_id__select_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revision_id",
+            "required": true,
+            "schema": {
+              "title": "Revision Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPromptRevisionView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Select Prompt Revision",
+        "tags": [
+          "prompt-enhancement"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/tasks/{task_id}/results": {
+      "get": {
+        "operationId": "list_results_api_v1_projects__project_id__tasks__task_id__results_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Results",
+        "tags": [
+          "results"
+        ]
+      }
+    },
+    "/api/v1/projects/{project_id}/workspace": {
+      "get": {
+        "operationId": "get_project_workspace_api_v1_projects__project_id__workspace_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectWorkspaceView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Project Workspace",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "system"
+        ]
+      }
+    }
+  }
+}

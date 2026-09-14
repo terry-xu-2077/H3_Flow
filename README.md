@@ -9,9 +9,9 @@ ShotMill 是面向 AI 视频生产的素材生成工作台。当前后端进入 
 - Python 3.11+
 - Rust stable（Tauri 桌面壳需要；一键启动器在 Windows 上可自动安装 Rust）
 
-## 一键启动（推荐）
+## 一键启动
 
-Windows 日常开发直接双击根目录的 `启动 ShotMill（前端+后端）.bat`。这是唯一保留的完整开发环境 BAT 入口，负责同时管理 FastAPI 后端与 Tauri 前端。
+Windows 真实联调直接双击根目录的 `启动 ShotMill（前端+后端）.bat`，它负责同时管理 FastAPI 后端与 Tauri 前端。
 
 启动器会自动完成：
 
@@ -35,6 +35,17 @@ Windows 日常开发直接双击根目录的 `启动 ShotMill（前端+后端）
 - 后端生命周期日志：`.shotmill/logs/backend-lifecycle.log`
 
 首次启动可能需要下载 Python、前端与 Rust 依赖；之后会通过依赖指纹跳过不必要的重复安装。
+
+## 假数据 UI 模式
+
+只打磨 UI 或验证交互时，双击 `启动 ShotMill（假数据）.bat`。它会打开浏览器版 UI，并连接后端提供的独立假 API：
+
+- 前端仍使用正式 `HttpProjectGateway` 和 `/api/v1`，没有第二套 UI 数据逻辑。
+- 假 API 复用正式路由、Schema、SQLite 和业务 Service，并预置项目、任务、资产和 AI 增强历史。
+- 当前会话内的保存和编辑真实生效；关闭启动器后临时数据自动清理。
+- 不需要启动 ComfyUI，也不会调用外部 Prompt AI。
+
+假数据 API 地址为 `http://127.0.0.1:8766`。详细契约见 [`contracts/README.md`](contracts/README.md)。
 
 ## 其他启动方式
 

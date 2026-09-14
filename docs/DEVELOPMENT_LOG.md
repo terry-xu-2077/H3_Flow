@@ -2,6 +2,15 @@
 
 本文件记录已经实际完成并通过验证的开发内容。当前以后端基础与真实前后端贯通为主线，执行清单见 [V0.3 Backend Foundation](./V0.3_BACKEND_FOUNDATION_DEVELOPMENT_TASKS.md)；V0.2 Storyboard 文档保留为 Task-first 领域边界。
 
+## 2026-09-14 · 同一 UI 的真实数据 / 假 API 双模式
+
+- 前端继续只使用 `HttpProjectGateway` 与 `/api/v1`；没有修改当前冻结 UI，也没有在组件内增加第二套 Mock 数据分支。
+- 新增后端拥有的独立假 API，复用正式 FastAPI Route、Pydantic Schema、Frontend Adapter、SQLite 与业务 Service，预置项目、任务、可显示图片资产和 AI Prompt Revision。
+- 假 Prompt Provider 输出确定性结果，不访问网络或消耗额度；假数据保存、编辑与新建在当前会话内真实生效。
+- 新增 `启动 ShotMill（假数据）.bat`：使用系统默认 PowerShell，启动 `8766` 假 API 与 `1420` 浏览器 UI；退出时停止两项服务并清理临时数据库。
+- 真实数据继续使用 `启动 ShotMill（前端+后端）.bat`，两种模式不允许同时抢占前端端口。
+- 新增后端生成的 `contracts/openapi.json`、契约说明和快照测试；另有测试逐项比较假 API 与真实 API 的 OpenAPI paths / schemas，避免接口漂移。
+
 ## 2026-09-14 · MiniMax H3 / ComfyUI 真实生成闭环
 
 - 从 `G:\AIGC\ComfyUI_Codex` 的稳定 MiniMax H3 参考工作流捕获真实 API prompt，并固化为 ShotMill Provider Profile 模板。

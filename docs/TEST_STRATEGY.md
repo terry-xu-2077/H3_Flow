@@ -159,6 +159,18 @@ Fake Video Provider 可配置：
 
 Fake Provider 应输出可预测结果，便于断言 Scheduler / Job / Result 状态。
 
+### UI 的真实数据 / 假数据模式
+
+前端只维护一套 `HttpProjectGateway`，两种模式都请求同一组 `/api/v1` 契约：
+
+- 真实模式连接正式后端、持久化数据与按配置启用的真实 Provider。
+- 假数据模式连接后端拥有的独立假 API；假 API 复用正式 Route、Schema、Frontend Adapter、SQLite 与业务 Service，仅替换临时数据和外部 Provider。
+- 假数据模式不得在 React 组件内注入第二套字段或绕开 HTTP Gateway。
+- 假 API 与真实 API 的 OpenAPI paths / schemas 必须有 Contract Test 保证一致。
+- 仓库内 `contracts/openapi.json` 必须由后端脚本生成，并通过快照测试防止过期。
+
+内存 Mock Gateway 可继续用于快速单元测试，但不能代替 HTTP 假 API 的联调与契约验证。
+
 ---
 
 ## 6. Failure Injection
